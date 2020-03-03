@@ -36,6 +36,7 @@ type
 
 implementation
       uses np.Base;
+
 { TValueHelper }
 
 class function TValueHelper.ArrayOfToValueArray<T>(Params: TArray<T>): TArray<TValue>;

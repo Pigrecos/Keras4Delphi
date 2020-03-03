@@ -158,10 +158,10 @@ begin
     Result := TBaseModel.Create;
 
     Parameters.Clear;
-    Parameters.Add( TPair<AnsiString,TValue>.Create('model',model) );
-    Parameters.Add( TPair<AnsiString,TValue>.Create('gpus', TValue.FromArray<Integer>(gpus)) );
-    Parameters.Add( TPair<AnsiString,TValue>.Create('cpu_merge',cpu_merge) );
-    Parameters.Add( TPair<AnsiString,TValue>.Create('cpu_relocation',cpu_relocation) );
+    Parameters.Add( TPair<String,TValue>.Create('model',model) );
+    Parameters.Add( TPair<String,TValue>.Create('gpus', TValue.FromArray<Integer>(gpus)) );
+    Parameters.Add( TPair<String,TValue>.Create('cpu_merge',cpu_merge) );
+    Parameters.Add( TPair<String,TValue>.Create('cpu_relocation',cpu_relocation) );
 
     Result.PyInstance :=  InvokeStaticMethod(caller,'multi_gpu_model',Parameters)
 end;
@@ -171,10 +171,10 @@ begin
     Result := TBaseModel.Create;
 
     Parameters.Clear;
-    Parameters.Add( TPair<AnsiString,TValue>.Create('model',model) );
-    Parameters.Add( TPair<AnsiString,TValue>.Create('gpus',gpus) );
-    Parameters.Add( TPair<AnsiString,TValue>.Create('cpu_merge',cpu_merge) );
-    Parameters.Add( TPair<AnsiString,TValue>.Create('cpu_relocation',cpu_relocation) );
+    Parameters.Add( TPair<String,TValue>.Create('model',model) );
+    Parameters.Add( TPair<String,TValue>.Create('gpus',gpus) );
+    Parameters.Add( TPair<String,TValue>.Create('cpu_merge',cpu_merge) );
+    Parameters.Add( TPair<String,TValue>.Create('cpu_relocation',cpu_relocation) );
 
     Result.PyInstance :=  InvokeStaticMethod(caller,'multi_gpu_model',Parameters)
 end;
@@ -182,9 +182,9 @@ end;
 function TUtil.ToCategorical(y: TNDarray; num_classes : PInteger= nil; dtype: string = 'float32'):TNDarray;
 begin
     Parameters.Clear;
-    Parameters.Add( TPair<AnsiString,TValue>.Create('y',y) );
-    Parameters.Add( TPair<AnsiString,TValue>.Create('num_classes',num_classes^) );
-    Parameters.Add( TPair<AnsiString,TValue>.Create('dtype',dtype) );
+    Parameters.Add( TPair<String,TValue>.Create('y',y) );
+    Parameters.Add( TPair<String,TValue>.Create('num_classes',num_classes^) );
+    Parameters.Add( TPair<String,TValue>.Create('dtype',dtype) );
 
     Result := TNDArray.Create( InvokeStaticMethod(caller,'to_categorical',Parameters) )
 
@@ -193,9 +193,9 @@ end;
 function TUtil.Normalize(y: TNDarray; axis: Integer = -1; order: Integer = 2): TNDarray;
 begin
     Parameters.Clear;
-    Parameters.Add( TPair<AnsiString,TValue>.Create('y',y) );
-    Parameters.Add( TPair<AnsiString,TValue>.Create('axis',axis) );
-    Parameters.Add( TPair<AnsiString,TValue>.Create('order',order) );
+    Parameters.Add( TPair<String,TValue>.Create('y',y) );
+    Parameters.Add( TPair<String,TValue>.Create('axis',axis) );
+    Parameters.Add( TPair<String,TValue>.Create('order',order) );
 
     Result := TNDArray.Create( InvokeStaticMethod(caller,'normalize',Parameters) )
 end;
@@ -203,13 +203,13 @@ end;
 procedure TUtil.PlotModel(model: TBaseModel; to_file: string = 'model.png'; show_shapes: Boolean = false; show_layer_names: Boolean = true; rankdir: string = 'TB'; expand_nested: Boolean = false; dpi: Integer = 96) ;
 begin
     Parameters.Clear;
-    Parameters.Add( TPair<AnsiString,TValue>.Create('model',model) );
-    Parameters.Add( TPair<AnsiString,TValue>.Create('to_file',to_file) );
-    Parameters.Add( TPair<AnsiString,TValue>.Create('show_shapes',show_shapes) );
-    Parameters.Add( TPair<AnsiString,TValue>.Create('show_layer_names',show_layer_names) );
-    Parameters.Add( TPair<AnsiString,TValue>.Create('rankdir',rankdir) );
-    Parameters.Add( TPair<AnsiString,TValue>.Create('expand_nested',expand_nested) );
-    Parameters.Add( TPair<AnsiString,TValue>.Create('dpi',dpi) );
+    Parameters.Add( TPair<String,TValue>.Create('model',model) );
+    Parameters.Add( TPair<String,TValue>.Create('to_file',to_file) );
+    Parameters.Add( TPair<String,TValue>.Create('show_shapes',show_shapes) );
+    Parameters.Add( TPair<String,TValue>.Create('show_layer_names',show_layer_names) );
+    Parameters.Add( TPair<String,TValue>.Create('rankdir',rankdir) );
+    Parameters.Add( TPair<String,TValue>.Create('expand_nested',expand_nested) );
+    Parameters.Add( TPair<String,TValue>.Create('dpi',dpi) );
 
     InvokeStaticMethod(caller,'plot_model',Parameters)
 end;
@@ -227,18 +227,18 @@ begin
     deviceCount['GPU'] := TPyInt.Create( gpu_device_count );
 
     Parameters.Clear;
-    Parameters.Add( TPair<AnsiString,TValue>.Create('intra_op_parallelism_threads',intra_op_parallelism_threads) );
-    Parameters.Add( TPair<AnsiString,TValue>.Create('inter_op_parallelism_threads',inter_op_parallelism_threads) );
-    Parameters.Add( TPair<AnsiString,TValue>.Create('allow_soft_placement',allow_soft_placement) );
-    Parameters.Add( TPair<AnsiString,TValue>.Create('deviceCount',deviceCount) );
+    Parameters.Add( TPair<String,TValue>.Create('intra_op_parallelism_threads',intra_op_parallelism_threads) );
+    Parameters.Add( TPair<String,TValue>.Create('inter_op_parallelism_threads',inter_op_parallelism_threads) );
+    Parameters.Add( TPair<String,TValue>.Create('allow_soft_placement',allow_soft_placement) );
+    Parameters.Add( TPair<String,TValue>.Create('deviceCount',deviceCount) );
     config := InvokeStaticMethod(tf,'ConfigProto',Parameters) ;
 
     Parameters.Clear;
-    Parameters.Add( TPair<AnsiString,TValue>.Create('config',config) );
+    Parameters.Add( TPair<String,TValue>.Create('config',config) );
     session := InvokeStaticMethod(tf,'Session',Parameters);
 
     Parameters.Clear;
-    Parameters.Add( TPair<AnsiString,TValue>.Create('session',session) );
+    Parameters.Add( TPair<String,TValue>.Create('session',session) );
     InvokeStaticMethod(kb,'set_session',Parameters)
 end;
 
@@ -255,13 +255,13 @@ procedure TBaseModel.Compile(optimizer: TStringOrInstance; loss: string; metrics
 begin
     Parameters.Clear;
 
-    Parameters.Add( TPair<AnsiString,TValue>.Create('optimizer',optimizer));
-    Parameters.Add( TPair<AnsiString,TValue>.Create('loss',loss));
-    Parameters.Add( TPair<AnsiString,TValue>.Create('metrics',TValue.FromArray<string>(metrics)));
-    Parameters.Add( TPair<AnsiString,TValue>.Create('loss_weights',TValue.FromArray<Double>(loss_weights)));
-    Parameters.Add( TPair<AnsiString,TValue>.Create('sample_weight_mode',sample_weight_mode));
-    Parameters.Add( TPair<AnsiString,TValue>.Create('weighted_metrics',TValue.FromArray<string>(weighted_metrics)));
-    Parameters.Add( TPair<AnsiString,TValue>.Create('target_tensors',TValue.FromArray<TNDarray>(target_tensors)));
+    Parameters.Add( TPair<String,TValue>.Create('optimizer',optimizer));
+    Parameters.Add( TPair<String,TValue>.Create('loss',loss));
+    Parameters.Add( TPair<String,TValue>.Create('metrics',TValue.FromArray<string>(metrics)));
+    Parameters.Add( TPair<String,TValue>.Create('loss_weights',TValue.FromArray<Double>(loss_weights)));
+    Parameters.Add( TPair<String,TValue>.Create('sample_weight_mode',sample_weight_mode));
+    Parameters.Add( TPair<String,TValue>.Create('weighted_metrics',TValue.FromArray<string>(weighted_metrics)));
+    Parameters.Add( TPair<String,TValue>.Create('target_tensors',TValue.FromArray<TNDarray>(target_tensors)));
 
     g_MyPyEngine.Py_XDecRef(InvokeMethod('compile',Parameters).Handle)
 end;
@@ -271,20 +271,20 @@ function TBaseModel.Evaluate(x, y: TNDarray; batch_size: PInteger; verbose: Inte
 begin
     Parameters.Clear;
 
-    Parameters.Add( TPair<AnsiString,TValue>.Create('x', x));
-    Parameters.Add( TPair<AnsiString,TValue>.Create('y',y));
+    Parameters.Add( TPair<String,TValue>.Create('x', x));
+    Parameters.Add( TPair<String,TValue>.Create('y',y));
 
     if batch_size <> nil  then
-       Parameters.Add( TPair<AnsiString,TValue>.Create('batch_size',batch_size^));
+       Parameters.Add( TPair<String,TValue>.Create('batch_size',batch_size^));
 
-    Parameters.Add( TPair<AnsiString,TValue>.Create('verbose',verbose));
-    Parameters.Add( TPair<AnsiString,TValue>.Create('sample_weight',sample_weight));
+    Parameters.Add( TPair<String,TValue>.Create('verbose',verbose));
+    Parameters.Add( TPair<String,TValue>.Create('sample_weight',sample_weight));
 
     if steps <> nil  then
-        Parameters.Add( TPair<AnsiString,TValue>.Create('steps',steps^));
+        Parameters.Add( TPair<String,TValue>.Create('steps',steps^));
 
     if callbacks <> nil  then
-        Parameters.Add( TPair<AnsiString,TValue>.Create('callbacks',TValue.FromArray<TCallback>(callbacks)));
+        Parameters.Add( TPair<String,TValue>.Create('callbacks',TValue.FromArray<TCallback>(callbacks)));
 
     Result := InvokeMethod('evaluate',Parameters).AsArrayofDouble;
 end;
@@ -296,18 +296,18 @@ var
 begin
     Parameters.Clear;
 
-    Parameters.Add( TPair<AnsiString,TValue>.Create('generator',generator));
+    Parameters.Add( TPair<String,TValue>.Create('generator',generator));
 
     if steps <> nil  then
-      Parameters.Add( TPair<AnsiString,TValue>.Create('steps',steps^));
+      Parameters.Add( TPair<String,TValue>.Create('steps',steps^));
 
     if callbacks <> nil  then
-        Parameters.Add( TPair<AnsiString,TValue>.Create('callbacks',TValue.FromArray<TCallback>(callbacks)));
+        Parameters.Add( TPair<String,TValue>.Create('callbacks',TValue.FromArray<TCallback>(callbacks)));
 
-    Parameters.Add( TPair<AnsiString,TValue>.Create('max_queue_size',max_queue_size));
-    Parameters.Add( TPair<AnsiString,TValue>.Create('workers',workers));
-    Parameters.Add( TPair<AnsiString,TValue>.Create('use_multiprocessing',use_multiprocessing));
-    Parameters.Add( TPair<AnsiString,TValue>.Create('verbose',verbose));
+    Parameters.Add( TPair<String,TValue>.Create('max_queue_size',max_queue_size));
+    Parameters.Add( TPair<String,TValue>.Create('workers',workers));
+    Parameters.Add( TPair<String,TValue>.Create('use_multiprocessing',use_multiprocessing));
+    Parameters.Add( TPair<String,TValue>.Create('verbose',verbose));
 
     pyresult := InvokeMethod('evaluate_generator',Parameters);
 
@@ -335,36 +335,36 @@ var
 begin
     Parameters.Clear;
 
-    Parameters.Add( TPair<AnsiString,TValue>.Create('x',x));
-    Parameters.Add( TPair<AnsiString,TValue>.Create('y',y));
+    Parameters.Add( TPair<String,TValue>.Create('x',x));
+    Parameters.Add( TPair<String,TValue>.Create('y',y));
 
-    if batch_size <> nil then  Parameters.Add( TPair<AnsiString,TValue>.Create('batch_size',batch_size^))
-    else                       Parameters.Add( TPair<AnsiString,TValue>.Create('batch_size', TPythonObject.None ));
+    if batch_size <> nil then  Parameters.Add( TPair<String,TValue>.Create('batch_size',batch_size^))
+    else                       Parameters.Add( TPair<String,TValue>.Create('batch_size', TPythonObject.None ));
 
-    Parameters.Add( TPair<AnsiString,TValue>.Create('epochs',epochs));
-    Parameters.Add( TPair<AnsiString,TValue>.Create('verbose',verbose));
+    Parameters.Add( TPair<String,TValue>.Create('epochs',epochs));
+    Parameters.Add( TPair<String,TValue>.Create('verbose',verbose));
 
-    if callbacks <> nil  then  Parameters.Add( TPair<AnsiString,TValue>.Create('callbacks',TValue.FromArray<TCallback>(callbacks)))
-    else                       Parameters.Add( TPair<AnsiString,TValue>.Create('callbacks', TPythonObject.None ));
+    if callbacks <> nil  then  Parameters.Add( TPair<String,TValue>.Create('callbacks',TValue.FromArray<TCallback>(callbacks)))
+    else                       Parameters.Add( TPair<String,TValue>.Create('callbacks', TPythonObject.None ));
 
-    Parameters.Add( TPair<AnsiString,TValue>.Create('validation_split',validation_split));
+    Parameters.Add( TPair<String,TValue>.Create('validation_split',validation_split));
 
-    if (validation_data <> nil) then Parameters.Add( TPair<AnsiString,TValue>.Create('validation_data', TValue.FromArray<TNDarray>(validation_data)))
-    else                             Parameters.Add( TPair<AnsiString,TValue>.Create('validation_data', TPythonObject.None ));
+    if (validation_data <> nil) then Parameters.Add( TPair<String,TValue>.Create('validation_data', TValue.FromArray<TNDarray>(validation_data)))
+    else                             Parameters.Add( TPair<String,TValue>.Create('validation_data', TPythonObject.None ));
 
-    Parameters.Add( TPair<AnsiString,TValue>.Create('shuffle',shuffle));
+    Parameters.Add( TPair<String,TValue>.Create('shuffle',shuffle));
 
-    if (class_weight <> nil) then Parameters.Add( TPair<AnsiString,TValue>.Create('class_weight',ToDict(class_weight)))
-    else                          Parameters.Add( TPair<AnsiString,TValue>.Create('class_weight', TPythonObject.None ));
+    if (class_weight <> nil) then Parameters.Add( TPair<String,TValue>.Create('class_weight',ToDict(class_weight)))
+    else                          Parameters.Add( TPair<String,TValue>.Create('class_weight', TPythonObject.None ));
 
-    Parameters.Add( TPair<AnsiString,TValue>.Create('sample_weight',sample_weight));
-    Parameters.Add( TPair<AnsiString,TValue>.Create('initial_epoch',initial_epoch));
+    Parameters.Add( TPair<String,TValue>.Create('sample_weight',sample_weight));
+    Parameters.Add( TPair<String,TValue>.Create('initial_epoch',initial_epoch));
 
-    if steps_per_epoch <> nil then Parameters.Add( TPair<AnsiString,TValue>.Create('steps_per_epoch',steps_per_epoch^))
-    else                           Parameters.Add( TPair<AnsiString,TValue>.Create('steps_per_epoch', TPythonObject.None ));
+    if steps_per_epoch <> nil then Parameters.Add( TPair<String,TValue>.Create('steps_per_epoch',steps_per_epoch^))
+    else                           Parameters.Add( TPair<String,TValue>.Create('steps_per_epoch', TPythonObject.None ));
 
-    if validation_steps <> nil then Parameters.Add( TPair<AnsiString,TValue>.Create('validation_steps',validation_steps^))
-    else                            Parameters.Add( TPair<AnsiString,TValue>.Create('validation_steps', TPythonObject.None ));
+    if validation_steps <> nil then Parameters.Add( TPair<String,TValue>.Create('validation_steps',validation_steps^))
+    else                            Parameters.Add( TPair<String,TValue>.Create('validation_steps', TPythonObject.None ));
 
     py := InvokeMethod('fit', Parameters);
 
@@ -380,28 +380,28 @@ function TBaseModel.FitGenerator(generator: TSequence; steps_per_epoch: PInteger
 begin
     Parameters.Clear;
 
-    Parameters.Add( TPair<AnsiString,TValue>.Create('generator',generator));
+    Parameters.Add( TPair<String,TValue>.Create('generator',generator));
     if steps_per_epoch <> nil then
-       Parameters.Add( TPair<AnsiString,TValue>.Create('steps_per_epoch',steps_per_epoch^));
+       Parameters.Add( TPair<String,TValue>.Create('steps_per_epoch',steps_per_epoch^));
 
-    Parameters.Add( TPair<AnsiString,TValue>.Create('epochs',epochs));
-    Parameters.Add( TPair<AnsiString,TValue>.Create('verbose',verbose));
+    Parameters.Add( TPair<String,TValue>.Create('epochs',epochs));
+    Parameters.Add( TPair<String,TValue>.Create('verbose',verbose));
 
     if callbacks <> nil  then
-        Parameters.Add( TPair<AnsiString,TValue>.Create('callbacks',TValue.FromArray<TCallback>(callbacks)));
+        Parameters.Add( TPair<String,TValue>.Create('callbacks',TValue.FromArray<TCallback>(callbacks)));
 
     if (validation_data <> nil) then
-       Parameters.Add( TPair<AnsiString,TValue>.Create('validation_data',validation_data));
+       Parameters.Add( TPair<String,TValue>.Create('validation_data',validation_data));
 
     if validation_steps <> nil then
-       Parameters.Add( TPair<AnsiString,TValue>.Create('validation_steps',validation_steps^));
-    //Parameters.Add( TPair<AnsiString,TValue>.Create('validation_freq',validation_freq));
-    Parameters.Add( TPair<AnsiString,TValue>.Create('class_weight',class_weight));
-    Parameters.Add( TPair<AnsiString,TValue>.Create('max_queue_size',max_queue_size));
-    Parameters.Add( TPair<AnsiString,TValue>.Create('workers',workers));
-    Parameters.Add( TPair<AnsiString,TValue>.Create('use_multiprocessing',use_multiprocessing));
-    Parameters.Add( TPair<AnsiString,TValue>.Create('shuffle',shuffle));
-    Parameters.Add( TPair<AnsiString,TValue>.Create('initial_epoch',initial_epoch));
+       Parameters.Add( TPair<String,TValue>.Create('validation_steps',validation_steps^));
+    //Parameters.Add( TPair<String,TValue>.Create('validation_freq',validation_freq));
+    Parameters.Add( TPair<String,TValue>.Create('class_weight',class_weight));
+    Parameters.Add( TPair<String,TValue>.Create('max_queue_size',max_queue_size));
+    Parameters.Add( TPair<String,TValue>.Create('workers',workers));
+    Parameters.Add( TPair<String,TValue>.Create('use_multiprocessing',use_multiprocessing));
+    Parameters.Add( TPair<String,TValue>.Create('shuffle',shuffle));
+    Parameters.Add( TPair<String,TValue>.Create('initial_epoch',initial_epoch));
 
     var py := InvokeMethod('fit_generator', Parameters);
 
@@ -421,8 +421,8 @@ begin
           dict[item.Key] := ToPython(Item.Value)  ;
 
     Parameters.Clear;
-    Parameters.Add( TPair<AnsiString,TValue>.Create('filepath',filepath));
-    Parameters.Add( TPair<AnsiString,TValue>.Create('custom_objects',ToDict(custom_objects)));
+    Parameters.Add( TPair<String,TValue>.Create('filepath',filepath));
+    Parameters.Add( TPair<String,TValue>.Create('custom_objects',ToDict(custom_objects)));
 
     model.PyInstance := GetKerasClassIstance('models');
     model.PyInstance := InvokeStaticMethod(model.PyInstance,'load_model',Parameters) ;
@@ -434,13 +434,13 @@ end;
 class function TBaseModel.ModelFromJson(json_string: string): TBaseModel;
 var
   model: TBaseModel;
-  args : TList< TPair<AnsiString,TValue> > ;
+  args : TList< TPair<String,TValue> > ;
 begin
     model := TBaseModel.Create;
 
-    args := TList< TPair<AnsiString,TValue> >.Create;
+    args := TList< TPair<String,TValue> >.Create;
 
-    args.Add( TPair<AnsiString,TValue>.Create('json_string',json_string));
+    args.Add( TPair<String,TValue>.Create('json_string',json_string));
 
     model.PyInstance := GetKerasClassIstance('models');
     model.PyInstance := InvokeStaticMethod(model.PyInstance,'model_from_json',args) ;
@@ -455,7 +455,7 @@ begin
     model := TBaseModel.Create;
 
     Parameters.Clear;
-    Parameters.Add( TPair<AnsiString,TValue>.Create('Yaml_string',Yaml_string));
+    Parameters.Add( TPair<String,TValue>.Create('Yaml_string',Yaml_string));
 
     model.PyInstance := GetKerasClassIstance('models');
     model.PyInstance := InvokeStaticMethod(model.PyInstance,'model_from_yaml',Parameters) ;
@@ -497,7 +497,7 @@ begin
 
     Parameters.Clear;
 
-    Parameters.Add( TPair<AnsiString,TValue>.Create('list', list));
+    Parameters.Add( TPair<String,TValue>.Create('list', list));
 
     g_MyPyEngine.Py_XDecRef(InvokeMethod('set_weights',Parameters).Handle)
 end;
@@ -506,7 +506,7 @@ procedure TBaseModel.SaveWeight(path: string);
 begin
     Parameters.Clear;
 
-    Parameters.Add( TPair<AnsiString,TValue>.Create('path', path));
+    Parameters.Add( TPair<String,TValue>.Create('path', path));
 
     g_MyPyEngine.Py_XDecRef(InvokeMethod('save_weights',Parameters).Handle)
 end;
@@ -515,7 +515,7 @@ procedure TBaseModel.LoadWeight(path: string);
 begin
     Parameters.Clear;
 
-    Parameters.Add( TPair<AnsiString,TValue>.Create('path', path));
+    Parameters.Add( TPair<String,TValue>.Create('path', path));
 
     g_MyPyEngine.Py_XDecRef(InvokeMethod('load_weights',Parameters).Handle)
 end;
@@ -524,9 +524,9 @@ procedure TBaseModel.Save(filepath: string; overwrite, include_optimizer: Boolea
 begin
     Parameters.Clear;
 
-    Parameters.Add( TPair<AnsiString,TValue>.Create('filepath', filepath));
-    Parameters.Add( TPair<AnsiString,TValue>.Create('overwrite', overwrite));
-    Parameters.Add( TPair<AnsiString,TValue>.Create('include_optimizer', include_optimizer));
+    Parameters.Add( TPair<String,TValue>.Create('filepath', filepath));
+    Parameters.Add( TPair<String,TValue>.Create('overwrite', overwrite));
+    Parameters.Add( TPair<String,TValue>.Create('include_optimizer', include_optimizer));
 
     g_MyPyEngine.Py_XDecRef(InvokeMethod('save',Parameters).Handle)
 end;
@@ -535,11 +535,11 @@ procedure TBaseModel.Summary(line_length: PInteger; positions: TArray<Double>);
 begin
     Parameters.Clear;
 
-    if line_length <> nil then  Parameters.Add( TPair<AnsiString,TValue>.Create('line_length', line_length^))
-    else                        Parameters.Add( TPair<AnsiString,TValue>.Create('line_length', TPythonObject.None ));
+    if line_length <> nil then  Parameters.Add( TPair<String,TValue>.Create('line_length', line_length^))
+    else                        Parameters.Add( TPair<String,TValue>.Create('line_length', TPythonObject.None ));
 
-    if positions <> nil  then   Parameters.Add( TPair<AnsiString,TValue>.Create('positions', TValue.FromArray<Double>(positions)))
-    else                        Parameters.Add( TPair<AnsiString,TValue>.Create('positions', TPythonObject.None ));
+    if positions <> nil  then   Parameters.Add( TPair<String,TValue>.Create('positions', TValue.FromArray<Double>(positions)))
+    else                        Parameters.Add( TPair<String,TValue>.Create('positions', TPythonObject.None ));
 
     g_MyPyEngine.Py_XDecRef(InvokeMethod('summary',Parameters).Handle );
 
@@ -566,14 +566,14 @@ begin
 
     x_tuple := TPyTuple.Create(items);
 
-    Parameters.Add( TPair<AnsiString,TValue>.Create('x',x_tuple));
+    Parameters.Add( TPair<String,TValue>.Create('x',x_tuple));
     if batch_size <> nil then
-        Parameters.Add( TPair<AnsiString,TValue>.Create('batch_size',batch_size^));
-    Parameters.Add( TPair<AnsiString,TValue>.Create('verbose',verbose));
+        Parameters.Add( TPair<String,TValue>.Create('batch_size',batch_size^));
+    Parameters.Add( TPair<String,TValue>.Create('verbose',verbose));
     if steps <> nil then
-        Parameters.Add( TPair<AnsiString,TValue>.Create('steps',steps^));
+        Parameters.Add( TPair<String,TValue>.Create('steps',steps^));
     if callbacks <> nil  then
-        Parameters.Add( TPair<AnsiString,TValue>.Create('callbacks',TValue.FromArray<TCallback>(callbacks)));
+        Parameters.Add( TPair<String,TValue>.Create('callbacks',TValue.FromArray<TCallback>(callbacks)));
 
     Result := TNDarray.Create(InvokeMethod('predict', Parameters));
 end;
@@ -583,14 +583,14 @@ function TBaseModel.Predict(x: TNDarray; batch_size: PInteger; verbose: Integer;
 begin
     Parameters.Clear;
 
-    Parameters.Add( TPair<AnsiString,TValue>.Create('x',x));
+    Parameters.Add( TPair<String,TValue>.Create('x',x));
     if batch_size <> nil then
-        Parameters.Add( TPair<AnsiString,TValue>.Create('batch_size',batch_size^));
-    Parameters.Add( TPair<AnsiString,TValue>.Create('verbose',verbose));
+        Parameters.Add( TPair<String,TValue>.Create('batch_size',batch_size^));
+    Parameters.Add( TPair<String,TValue>.Create('verbose',verbose));
     if steps <> nil then
-        Parameters.Add( TPair<AnsiString,TValue>.Create('steps',steps^));
+        Parameters.Add( TPair<String,TValue>.Create('steps',steps^));
     if callbacks <> nil  then
-        Parameters.Add( TPair<AnsiString,TValue>.Create('callbacks',TValue.FromArray<TCallback>(callbacks)));
+        Parameters.Add( TPair<String,TValue>.Create('callbacks',TValue.FromArray<TCallback>(callbacks)));
 
     Result := TNDarray.Create(InvokeMethod('predict', Parameters));
 end;
@@ -602,15 +602,15 @@ var
 begin
     Parameters.Clear;
 
-    Parameters.Add( TPair<AnsiString,TValue>.Create('generator',generator));
+    Parameters.Add( TPair<String,TValue>.Create('generator',generator));
     if steps <> nil then
-        Parameters.Add( TPair<AnsiString,TValue>.Create('steps',steps^));
+        Parameters.Add( TPair<String,TValue>.Create('steps',steps^));
     if callbacks <> nil  then
-        Parameters.Add( TPair<AnsiString,TValue>.Create('callbacks',TValue.FromArray<TCallback>(callbacks)));
-    Parameters.Add( TPair<AnsiString,TValue>.Create('max_queue_size',max_queue_size));
-    Parameters.Add( TPair<AnsiString,TValue>.Create('workers',workers));
-    Parameters.Add( TPair<AnsiString,TValue>.Create('use_multiprocessing',use_multiprocessing));
-    Parameters.Add( TPair<AnsiString,TValue>.Create('verbose',verbose));
+        Parameters.Add( TPair<String,TValue>.Create('callbacks',TValue.FromArray<TCallback>(callbacks)));
+    Parameters.Add( TPair<String,TValue>.Create('max_queue_size',max_queue_size));
+    Parameters.Add( TPair<String,TValue>.Create('workers',workers));
+    Parameters.Add( TPair<String,TValue>.Create('use_multiprocessing',use_multiprocessing));
+    Parameters.Add( TPair<String,TValue>.Create('verbose',verbose));
 
     py := InvokeMethod('predict_generator', Parameters);
 
@@ -621,7 +621,7 @@ function TBaseModel.PredictOnBatch(x: TNDarray): TNDarray;
 begin
     Parameters.Clear;
 
-    Parameters.Add( TPair<AnsiString,TValue>.Create('x',x));
+    Parameters.Add( TPair<String,TValue>.Create('x',x));
 
     Result := TNDarray.Create(InvokeMethod('predict_on_batch', Parameters));
 end;
@@ -632,10 +632,10 @@ var
 begin
     Parameters.Clear;
 
-    Parameters.Add( TPair<AnsiString,TValue>.Create('x',x));
-    Parameters.Add( TPair<AnsiString,TValue>.Create('y',y));
-    Parameters.Add( TPair<AnsiString,TValue>.Create('sample_weight',sample_weight));
-    Parameters.Add( TPair<AnsiString,TValue>.Create('class_weight',class_weight));
+    Parameters.Add( TPair<String,TValue>.Create('x',x));
+    Parameters.Add( TPair<String,TValue>.Create('y',y));
+    Parameters.Add( TPair<String,TValue>.Create('sample_weight',sample_weight));
+    Parameters.Add( TPair<String,TValue>.Create('class_weight',class_weight));
 
     pyresult := InvokeMethod('train_on_batch', Parameters);
 
@@ -657,9 +657,9 @@ var
 begin
     Parameters.Clear;
 
-    Parameters.Add( TPair<AnsiString,TValue>.Create('x',x));
-    Parameters.Add( TPair<AnsiString,TValue>.Create('y',y));
-    Parameters.Add( TPair<AnsiString,TValue>.Create('sample_weight',sample_weight));
+    Parameters.Add( TPair<String,TValue>.Create('x',x));
+    Parameters.Add( TPair<String,TValue>.Create('y',y));
+    Parameters.Add( TPair<String,TValue>.Create('sample_weight',sample_weight));
 
     pyresult := InvokeMethod('test_on_batch', Parameters);
 
@@ -680,7 +680,7 @@ procedure TBaseModel.SaveOnnx(filePath: string);
 begin
     Parameters.Clear;
 
-    Parameters.Add( TPair<AnsiString,TValue>.Create('filePath',filePath));
+    Parameters.Add( TPair<String,TValue>.Create('filePath',filePath));
 
     InvokeStaticMethod(hkeras2onnxMod,'convert_keras',Parameters) ;
     TFile.WriteAllText(filePath, hkeras2onnxMod.ToString);
@@ -700,9 +700,9 @@ begin
         Exit;
     end;
 
-    Parameters.Add( TPair<AnsiString,TValue>.Create('model',PyInstance));
-    Parameters.Add( TPair<AnsiString,TValue>.Create('artifacts_dir',artifacts_dir));
-    Parameters.Add( TPair<AnsiString,TValue>.Create('quantize',quantize));
+    Parameters.Add( TPair<String,TValue>.Create('model',PyInstance));
+    Parameters.Add( TPair<String,TValue>.Create('artifacts_dir',artifacts_dir));
+    Parameters.Add( TPair<String,TValue>.Create('quantize',quantize));
 
     InvokeStaticMethod(htf,'save_keras_model',Parameters) ;
 
@@ -732,7 +732,7 @@ constructor TModel.Create(input: TArray<TBaseLayer>);
 begin
     inherited Create;
 
-    Parameters.Add( TPair<AnsiString,TValue>.Create('input', TValue.FromArray<TBaseLayer>(input)) );
+    Parameters.Add( TPair<String,TValue>.Create('input', TValue.FromArray<TBaseLayer>(input)) );
 
     PyInstance := GetKerasClassIstance('models.Model');
     init();
@@ -742,8 +742,8 @@ constructor TModel.Create(input, output: TArray<TBaseLayer>);
 begin
     inherited Create;
 
-    Parameters.Add( TPair<AnsiString,TValue>.Create('inputs', TValue.FromArray<TBaseLayer>(input)) );
-    Parameters.Add( TPair<AnsiString,TValue>.Create('outputs', TValue.FromArray<TBaseLayer>(output)) );
+    Parameters.Add( TPair<String,TValue>.Create('inputs', TValue.FromArray<TBaseLayer>(input)) );
+    Parameters.Add( TPair<String,TValue>.Create('outputs', TValue.FromArray<TBaseLayer>(output)) );
 
     PyInstance := GetKerasClassIstance('models.Model');
     init();
@@ -783,7 +783,7 @@ procedure TSequential.Add(layer: TBaseLayer);
 begin
     Parameters.Clear;
 
-   Parameters.Add( TPair<AnsiString,TValue>.Create('layers', layer  ));
+   Parameters.Add( TPair<String,TValue>.Create('layers', layer  ));
 
    g_MyPyEngine.Py_XDecRef ( InvokeMethod('add',Parameters).Handle ) ;
 end;

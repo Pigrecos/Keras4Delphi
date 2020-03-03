@@ -45,7 +45,7 @@ var
   vNumpy : TNumPy;
 
 implementation
-     uses System.Generics.Collections, System.Diagnostics, System.IOUtils, Jpeg,
+     uses System.Generics.Collections, System.Diagnostics, System.IOUtils, Jpeg,MethodCallBack,
           utils,
           Keras,
           Keras.Layers,
@@ -115,19 +115,32 @@ end;
 
 function log(epochidx: Integer): Double;
 begin
+    frmMain.redtOutput.Lines.Add('test callback :' + IntToStr(epochidx));
+end;
 
+function pylog(self, args : PPyObject): PPyObject;cdecl;
+var
+  epochidx: Integer ;
+  d       : Double;
+begin
+    if g_MyPyEngine.PyArg_ParseTuple( args, 'if:logFunction',@epochidx,@d) <> 0 then
+    begin
+        log(epochidx) ;
+        d := 7.0;
+        Result :=   g_MyPyEngine.VariantAsPyObject(d) ;
+    end;
 end;
 
 procedure TfrmMain.btn1Click(Sender: TObject);
 begin
     //============== Esempi ======================//
-    //NumPyTest;
+    NumPyTest;
 
     // keras test
-    //Test1;
-    //esempio_XOR;
-    //MergeExample ;
-    //ImplementCallback
+    Test1;
+    esempio_XOR;
+    MergeExample ;
+    ImplementCallback;
     MNIST_CNN
 end;
 
@@ -228,10 +241,7 @@ begin
 
     callback := TEarlyStopping.Create ('val_loss', 3)  ;
 
-    // non funziona
-    //var funzione : TFunSchedule;
-    //funzione := log;
-    //callback := TLearningRateScheduler.Create (funzione)  ;
+    callback := TLearningRateScheduler.Create (pylog)  ;
 end;
 
 procedure TfrmMain.esempio_XOR;
@@ -309,14 +319,17 @@ begin
     model.Add( TDense.Create(64, 'relu'));
     model.Add( TDense.Create(1, 'sigmoid'));
 
+    var callback : TCallback := TLearningRateScheduler.Create (pylog) ;
+
     var lossHistory : TCallback := TCallback.Custom('LossHistory', 'LossHistory.py');
+
 
     //Compile and train
     model.Compile(TStringOrInstance.Create( TAdam.Create ), 'binary_crossentropy', [ 'accuracy' ]);
     var batch_size: Integer  := 2;
-    var history : THistory := model.Fit(x, y, @batch_size, 10, 1, [ lossHistory ]);
+    var history : THistory := model.Fit(x, y, @batch_size, 10, 1, [ callback{lossHistory} ]);
 
-    var customLosses: TArray<Double> := lossHistory.GetDoubleArray('losses');
+   // var customLosses: TArray<Double> := lossHistory.GetDoubleArray('losses');
 
 end;
 
@@ -414,7 +427,7 @@ begin
     vNumpy := TNumPy.Init(True);
 
     jpg := TJpegImage.Create;
-     jpg.LoadFromFile('nn.jpg');
+    jpg.LoadFromFile('nn.jpg');
     img1.Picture.Assign(jpg);
 end;
 

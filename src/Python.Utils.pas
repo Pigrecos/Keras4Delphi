@@ -603,7 +603,7 @@ begin
     end;
 
     for i := 0 to  VarArrayHighBound(vArr, 1) do
-       Result[i] := Result + [ VarAsType(vArr[i],varDouble) ]
+       Result := Result + [ VarAsType(vArr[i],varDouble) ]
 
 end;
 
@@ -673,7 +673,7 @@ begin
 
     if g_MyPyEngine.PyErr_Occurred = nil then
     begin
-        vArr := VarArrayCreate( [0, seq_length], varVariant );
+        vArr := VarArrayCreate( [0, seq_length-1], varVariant );
         for i := 0 to g_MyPyEngine.PySequence_Length( FHandle )-1 do
            vArr[i] := GetSequenceItem( FHandle, i );
     end else // the object didn't implement the sequence API, so we return Null

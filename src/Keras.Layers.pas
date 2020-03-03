@@ -4,6 +4,8 @@ interface
    uses System.Generics.Collections, System.Rtti, utils,PythonEngine, Python.Utils, Models, Keras;
 
 type
+  TBaseLayer = class;
+
   //BaseLayer
   TBaseLayer = class(TBase)
      public
@@ -75,11 +77,9 @@ type
        constructor Create(n: Integer;input_shape : PTnp_Shape = nil);
   end;
 
-  TLambdaFunction = function(tensor : TArray<TBaseLayer>):TArray<TBaseLayer>;
-
   TLambda = class(TBaseLayer)
      public
-       constructor Create(fun: TLambdaFunction; output_shape: PTnp_Shape = nil; mask: TNDarray = nil; arguments: TList< TPair<string,TValue> > = nil; input_shape: PTnp_Shape = nil);
+       constructor Create(fun: PyCFunction; output_shape: PTnp_Shape = nil; mask: TNDarray = nil; arguments: TList< TPair<string,TValue> > = nil; input_shape: PTnp_Shape = nil);
   end;
 
   TActivityRegularization = class(TBaseLayer)
@@ -826,7 +826,7 @@ begin
 
     if Length(inputs) = 1 then
     begin
-        Parameters.Add( TPair<AnsiString,TValue>.Create('inputs', inputs[0].PyInstance) );
+        Parameters.Add( TPair<String,TValue>.Create('inputs', inputs[0].PyInstance) );
 
         Result := TBaseLayer.Create( InvokeMethod('__call__', Parameters) )
     end else
@@ -844,15 +844,15 @@ constructor TKInput.Create(shape:Tnp_Shape; batch_shape: PTnp_Shape; name, dtype
 begin
     inherited Create;
 
-    Parameters.Add( TPair<AnsiString,TValue>.Create('shape', TValue.FromShape(shape)));
+    Parameters.Add( TPair<String,TValue>.Create('shape', TValue.FromShape(shape)));
 
-    if batch_shape <> nil then Parameters.Add( TPair<AnsiString,TValue>.Create('batch_shape',TValue.FromShape(batch_shape^)))
-    else                       Parameters.Add( TPair<AnsiString,TValue>.Create('batch_shape', TPythonObject.None ));
+    if batch_shape <> nil then Parameters.Add( TPair<String,TValue>.Create('batch_shape',TValue.FromShape(batch_shape^)))
+    else                       Parameters.Add( TPair<String,TValue>.Create('batch_shape', TPythonObject.None ));
 
-    Parameters.Add( TPair<AnsiString,TValue>.Create('name',name));
-    Parameters.Add( TPair<AnsiString,TValue>.Create('dtype',dtype));
-    Parameters.Add( TPair<AnsiString,TValue>.Create('sparse',sparse));
-    Parameters.Add( TPair<AnsiString,TValue>.Create('tensor',tensor));
+    Parameters.Add( TPair<String,TValue>.Create('name',name));
+    Parameters.Add( TPair<String,TValue>.Create('dtype',dtype));
+    Parameters.Add( TPair<String,TValue>.Create('sparse',sparse));
+    Parameters.Add( TPair<String,TValue>.Create('tensor',tensor));
 
     PyInstance := GetKerasClassIstance('layers.Input');
     Init;
@@ -867,23 +867,23 @@ constructor TDense.Create(units: Integer; input_dim: PInteger; activation: strin
 begin
     inherited Create;
 
-    Parameters.Add( TPair<AnsiString,TValue>.Create('units',units));
+    Parameters.Add( TPair<String,TValue>.Create('units',units));
 
-    if input_dim <> nil then Parameters.Add( TPair<AnsiString,TValue>.Create('input_dim',input_dim^))
-    else                     Parameters.Add( TPair<AnsiString,TValue>.Create('input_dim', TPythonObject.None ));
+    if input_dim <> nil then Parameters.Add( TPair<String,TValue>.Create('input_dim',input_dim^))
+    else                     Parameters.Add( TPair<String,TValue>.Create('input_dim', TPythonObject.None ));
 
-    Parameters.Add( TPair<AnsiString,TValue>.Create('activation',activation));
-    Parameters.Add( TPair<AnsiString,TValue>.Create('use_bias',use_bias));
-    Parameters.Add( TPair<AnsiString,TValue>.Create('kernel_initializer',kernel_initializer));
-    Parameters.Add( TPair<AnsiString,TValue>.Create('bias_initializer',bias_initializer));
-    Parameters.Add( TPair<AnsiString,TValue>.Create('kernel_regularizer',kernel_regularizer));
-    Parameters.Add( TPair<AnsiString,TValue>.Create('bias_regularizer',bias_regularizer));
-    Parameters.Add( TPair<AnsiString,TValue>.Create('activity_regularizer',activity_regularizer));
-    Parameters.Add( TPair<AnsiString,TValue>.Create('kernel_constraint',kernel_constraint));
-    Parameters.Add( TPair<AnsiString,TValue>.Create('bias_constraint',bias_constraint));
+    Parameters.Add( TPair<String,TValue>.Create('activation',activation));
+    Parameters.Add( TPair<String,TValue>.Create('use_bias',use_bias));
+    Parameters.Add( TPair<String,TValue>.Create('kernel_initializer',kernel_initializer));
+    Parameters.Add( TPair<String,TValue>.Create('bias_initializer',bias_initializer));
+    Parameters.Add( TPair<String,TValue>.Create('kernel_regularizer',kernel_regularizer));
+    Parameters.Add( TPair<String,TValue>.Create('bias_regularizer',bias_regularizer));
+    Parameters.Add( TPair<String,TValue>.Create('activity_regularizer',activity_regularizer));
+    Parameters.Add( TPair<String,TValue>.Create('kernel_constraint',kernel_constraint));
+    Parameters.Add( TPair<String,TValue>.Create('bias_constraint',bias_constraint));
 
-    if input_shape <> nil then Parameters.Add( TPair<AnsiString,TValue>.Create('input_shape',TValue.FromShape(input_shape^)))
-    else                       Parameters.Add( TPair<AnsiString,TValue>.Create('input_shape', TPythonObject.None ));
+    if input_shape <> nil then Parameters.Add( TPair<String,TValue>.Create('input_shape',TValue.FromShape(input_shape^)))
+    else                       Parameters.Add( TPair<String,TValue>.Create('input_shape', TPythonObject.None ));
 
     PyInstance := GetKerasClassIstance('layers.Dense');
     Init;
@@ -893,11 +893,11 @@ constructor TDense.Create(units: Integer; activation: string; input_shape: PTnp_
 begin
     inherited Create;
 
-    Parameters.Add( TPair<AnsiString,TValue>.Create('units',units));
-    Parameters.Add( TPair<AnsiString,TValue>.Create('activation',activation));
+    Parameters.Add( TPair<String,TValue>.Create('units',units));
+    Parameters.Add( TPair<String,TValue>.Create('activation',activation));
 
-    if input_shape <> nil then Parameters.Add( TPair<AnsiString,TValue>.Create('input_shape',TValue.FromShape(input_shape^)))
-    else                       Parameters.Add( TPair<AnsiString,TValue>.Create('input_shape', TPythonObject.None ));
+    if input_shape <> nil then Parameters.Add( TPair<String,TValue>.Create('input_shape',TValue.FromShape(input_shape^)))
+    else                       Parameters.Add( TPair<String,TValue>.Create('input_shape', TPythonObject.None ));
 
     PyInstance := GetKerasClassIstance('layers.Dense');
     Init;
@@ -909,10 +909,10 @@ constructor TActivation.Create(act: string; input_shape: PTnp_Shape);
 begin
     inherited Create;
 
-    Parameters.Add( TPair<AnsiString,TValue>.Create('activation',act));
+    Parameters.Add( TPair<String,TValue>.Create('activation',act));
 
-    if input_shape <> nil then Parameters.Add( TPair<AnsiString,TValue>.Create('input_shape',TValue.FromShape(input_shape^)))
-    else                       Parameters.Add( TPair<AnsiString,TValue>.Create('input_shape', TPythonObject.None ));
+    if input_shape <> nil then Parameters.Add( TPair<String,TValue>.Create('input_shape',TValue.FromShape(input_shape^)))
+    else                       Parameters.Add( TPair<String,TValue>.Create('input_shape', TPythonObject.None ));
 
     PyInstance := GetKerasClassIstance('layers.Activation');
     Init;
@@ -924,13 +924,13 @@ constructor TDropout.Create(rate: Double; noise_shape: PTnp_Shape; seed: PIntege
 begin
     inherited Create;
 
-    Parameters.Add( TPair<AnsiString,TValue>.Create('rate',rate));
+    Parameters.Add( TPair<String,TValue>.Create('rate',rate));
 
-    if noise_shape <> nil then Parameters.Add( TPair<AnsiString,TValue>.Create('noise_shape',TValue.FromShape(noise_shape^)))
-    else                       Parameters.Add( TPair<AnsiString,TValue>.Create('noise_shape', TPythonObject.None ));
+    if noise_shape <> nil then Parameters.Add( TPair<String,TValue>.Create('noise_shape',TValue.FromShape(noise_shape^)))
+    else                       Parameters.Add( TPair<String,TValue>.Create('noise_shape', TPythonObject.None ));
 
-    if seed <> nil then Parameters.Add( TPair<AnsiString,TValue>.Create('seed',seed^))
-    else                Parameters.Add( TPair<AnsiString,TValue>.Create('seed', TPythonObject.None ));
+    if seed <> nil then Parameters.Add( TPair<String,TValue>.Create('seed',seed^))
+    else                Parameters.Add( TPair<String,TValue>.Create('seed', TPythonObject.None ));
 
     PyInstance := GetKerasClassIstance('layers.Dropout');
     Init;
@@ -942,7 +942,7 @@ constructor TFlatten.Create(data_format: string);
 begin
     inherited Create;
 
-    Parameters.Add( TPair<AnsiString,TValue>.Create('data_format',data_format));
+    Parameters.Add( TPair<String,TValue>.Create('data_format',data_format));
 
     PyInstance := GetKerasClassIstance('layers.Flatten');
     Init;
@@ -954,10 +954,10 @@ constructor TReshape.Create(target_shape: Tnp_Shape; input_shape: PTnp_Shape);
 begin
     inherited Create;
 
-    Parameters.Add( TPair<AnsiString,TValue>.Create('target_shape', TValue.FromShape(target_shape)));
+    Parameters.Add( TPair<String,TValue>.Create('target_shape', TValue.FromShape(target_shape)));
 
-    if input_shape <> nil then Parameters.Add( TPair<AnsiString,TValue>.Create('input_shape',TValue.FromShape(input_shape^)))
-    else                       Parameters.Add( TPair<AnsiString,TValue>.Create('input_shape', TPythonObject.None ));
+    if input_shape <> nil then Parameters.Add( TPair<String,TValue>.Create('input_shape',TValue.FromShape(input_shape^)))
+    else                       Parameters.Add( TPair<String,TValue>.Create('input_shape', TPythonObject.None ));
 
     PyInstance := GetKerasClassIstance('layers.Reshape');
     Init;
@@ -969,10 +969,10 @@ constructor TPermute.Create(dims: Integer; input_shape: PTnp_Shape);
 begin
     inherited Create;
 
-    Parameters.Add( TPair<AnsiString,TValue>.Create('dims', dims));
+    Parameters.Add( TPair<String,TValue>.Create('dims', dims));
 
-    if input_shape <> nil then Parameters.Add( TPair<AnsiString,TValue>.Create('input_shape',TValue.FromShape(input_shape^)))
-    else                       Parameters.Add( TPair<AnsiString,TValue>.Create('input_shape', TPythonObject.None ));
+    if input_shape <> nil then Parameters.Add( TPair<String,TValue>.Create('input_shape',TValue.FromShape(input_shape^)))
+    else                       Parameters.Add( TPair<String,TValue>.Create('input_shape', TPythonObject.None ));
 
     PyInstance := GetKerasClassIstance('layers.Permute');
     Init;
@@ -984,10 +984,10 @@ constructor TRepeatVector.Create(n: Integer; input_shape: PTnp_Shape);
 begin
     inherited Create;
 
-    Parameters.Add( TPair<AnsiString,TValue>.Create('n', n));
+    Parameters.Add( TPair<String,TValue>.Create('n', n));
 
-    if input_shape <> nil then Parameters.Add( TPair<AnsiString,TValue>.Create('input_shape',TValue.FromShape(input_shape^)))
-    else                       Parameters.Add( TPair<AnsiString,TValue>.Create('input_shape', TPythonObject.None ));
+    if input_shape <> nil then Parameters.Add( TPair<String,TValue>.Create('input_shape',TValue.FromShape(input_shape^)))
+    else                       Parameters.Add( TPair<String,TValue>.Create('input_shape', TPythonObject.None ));
 
     PyInstance := GetKerasClassIstance('layers.RepeatVector');
     Init;
@@ -995,22 +995,32 @@ end;
 
 { TLambda }
 
-constructor TLambda.Create(fun: TLambdaFunction; output_shape: PTnp_Shape; mask: TNDarray;
+constructor TLambda.Create(fun: PyCFunction; output_shape: PTnp_Shape; mask: TNDarray;
                                  arguments: TList<TPair<string, TValue>>; input_shape: PTnp_Shape);
 begin
     inherited Create;
 
-    Parameters.Add( TPair<AnsiString,TValue>.Create('function', @fun));
+    var m : TPythonModule := TPythonModule.Create(nil);
+    m.ModuleName := 'kcallbacks';
+    m.Engine     := g_MyPyEngine;
+    m.Initialize;
 
-    if input_shape <> nil then Parameters.Add( TPair<AnsiString,TValue>.Create('output_shape',TValue.FromShape(output_shape^)))
-    else                       Parameters.Add( TPair<AnsiString,TValue>.Create('output_shape', TPythonObject.None ));
+    var mr : PPyMethodDef := m.AddMethod(pansichar('cbLambda'),fun,PAnsiChar('Lambda Callback Func.'));
+    CreatePyFunc(m,mr);
 
-    Parameters.Add( TPair<AnsiString,TValue>.Create('mask', mask));
+    var cb : TPythonObject := TPythonObject.create(m.Module).GetAttr('cbLambda') ;
 
-    Parameters.Add( TPair<AnsiString,TValue>.Create('arguments', arguments));
+    Parameters.Add( TPair<String,TValue>.Create('function', cb));
 
-    if input_shape <> nil then Parameters.Add( TPair<AnsiString,TValue>.Create('input_shape',TValue.FromShape(input_shape^)))
-    else                       Parameters.Add( TPair<AnsiString,TValue>.Create('input_shape', TPythonObject.None ));
+    if input_shape <> nil then Parameters.Add( TPair<String,TValue>.Create('output_shape',TValue.FromShape(output_shape^)))
+    else                       Parameters.Add( TPair<String,TValue>.Create('output_shape', TPythonObject.None ));
+
+    Parameters.Add( TPair<String,TValue>.Create('mask', mask));
+
+    Parameters.Add( TPair<String,TValue>.Create('arguments', arguments));
+
+    if input_shape <> nil then Parameters.Add( TPair<String,TValue>.Create('input_shape',TValue.FromShape(input_shape^)))
+    else                       Parameters.Add( TPair<String,TValue>.Create('input_shape', TPythonObject.None ));
 
     PyInstance := GetKerasClassIstance('layers.Lambda');
     Init;
@@ -1022,11 +1032,11 @@ constructor TActivityRegularization.Create(l1, l2: Double; input_shape: PTnp_Sha
 begin
     inherited Create;
 
-    Parameters.Add( TPair<AnsiString,TValue>.Create('l1', l1));
-    Parameters.Add( TPair<AnsiString,TValue>.Create('l2', l2));
+    Parameters.Add( TPair<String,TValue>.Create('l1', l1));
+    Parameters.Add( TPair<String,TValue>.Create('l2', l2));
 
-    if input_shape <> nil then Parameters.Add( TPair<AnsiString,TValue>.Create('input_shape',TValue.FromShape(input_shape^)))
-    else                       Parameters.Add( TPair<AnsiString,TValue>.Create('input_shape', TPythonObject.None ));
+    if input_shape <> nil then Parameters.Add( TPair<String,TValue>.Create('input_shape',TValue.FromShape(input_shape^)))
+    else                       Parameters.Add( TPair<String,TValue>.Create('input_shape', TPythonObject.None ));
 
     PyInstance := GetKerasClassIstance('layers.ActivityRegularization');
     Init;
@@ -1038,7 +1048,7 @@ constructor TMasking.Create(mask_value: Double);
 begin
     inherited Create;
 
-    Parameters.Add( TPair<AnsiString,TValue>.Create('mask_value', mask_value));
+    Parameters.Add( TPair<String,TValue>.Create('mask_value', mask_value));
 
     PyInstance := GetKerasClassIstance('layers.Masking');
     Init;
@@ -1050,10 +1060,10 @@ constructor TSpatialDropout1D.Create(rate: Double; input_shape: PTnp_Shape);
 begin
     inherited Create;
 
-    Parameters.Add( TPair<AnsiString,TValue>.Create('rate', rate));
+    Parameters.Add( TPair<String,TValue>.Create('rate', rate));
 
-    if input_shape <> nil then Parameters.Add( TPair<AnsiString,TValue>.Create('input_shape',TValue.FromShape(input_shape^)))
-    else                       Parameters.Add( TPair<AnsiString,TValue>.Create('input_shape', TPythonObject.None ));
+    if input_shape <> nil then Parameters.Add( TPair<String,TValue>.Create('input_shape',TValue.FromShape(input_shape^)))
+    else                       Parameters.Add( TPair<String,TValue>.Create('input_shape', TPythonObject.None ));
 
     PyInstance := GetKerasClassIstance('layers.SpatialDropout1D');
     Init;
@@ -1065,11 +1075,11 @@ constructor TSpatialDropout2D.Create(rate: Double; data_format: string; input_sh
 begin
     inherited Create;
 
-    Parameters.Add( TPair<AnsiString,TValue>.Create('rate', rate));
-    Parameters.Add( TPair<AnsiString,TValue>.Create('data_format', data_format));
+    Parameters.Add( TPair<String,TValue>.Create('rate', rate));
+    Parameters.Add( TPair<String,TValue>.Create('data_format', data_format));
 
-    if input_shape <> nil then Parameters.Add( TPair<AnsiString,TValue>.Create('input_shape',TValue.FromShape(input_shape^)))
-    else                       Parameters.Add( TPair<AnsiString,TValue>.Create('input_shape', TPythonObject.None ));
+    if input_shape <> nil then Parameters.Add( TPair<String,TValue>.Create('input_shape',TValue.FromShape(input_shape^)))
+    else                       Parameters.Add( TPair<String,TValue>.Create('input_shape', TPythonObject.None ));
 
     PyInstance := GetKerasClassIstance('layers.SpatialDropout2D');
     Init;
@@ -1081,11 +1091,11 @@ constructor TSpatialDropout3D.Create(rate: Double; data_format: string; input_sh
 begin
     inherited Create;
 
-    Parameters.Add( TPair<AnsiString,TValue>.Create('rate', rate));
-    Parameters.Add( TPair<AnsiString,TValue>.Create('data_format', data_format));
+    Parameters.Add( TPair<String,TValue>.Create('rate', rate));
+    Parameters.Add( TPair<String,TValue>.Create('data_format', data_format));
 
-    if input_shape <> nil then Parameters.Add( TPair<AnsiString,TValue>.Create('input_shape',TValue.FromShape(input_shape^)))
-    else                       Parameters.Add( TPair<AnsiString,TValue>.Create('input_shape', TPythonObject.None ));
+    if input_shape <> nil then Parameters.Add( TPair<String,TValue>.Create('input_shape',TValue.FromShape(input_shape^)))
+    else                       Parameters.Add( TPair<String,TValue>.Create('input_shape', TPythonObject.None ));
 
     PyInstance := GetKerasClassIstance('layers.SpatialDropout3D');
     Init;
@@ -1097,7 +1107,7 @@ constructor TLeakyReLU.Create(alpha: Double);
 begin
     inherited Create;
 
-    Parameters.Add( TPair<AnsiString,TValue>.Create('alpha', alpha));
+    Parameters.Add( TPair<String,TValue>.Create('alpha', alpha));
 
     PyInstance := GetKerasClassIstance('layers.LeakyReLU');
     Init;
@@ -1109,12 +1119,12 @@ constructor TPReLU.Create(alpha_initializer, alpha_regularizer, alpha_constraint
 begin
     inherited Create;
 
-    Parameters.Add( TPair<AnsiString,TValue>.Create('alpha_initializer', alpha_initializer));
-    Parameters.Add( TPair<AnsiString,TValue>.Create('alpha_regularizer', alpha_regularizer));
-    Parameters.Add( TPair<AnsiString,TValue>.Create('alpha_constraint', alpha_constraint));
+    Parameters.Add( TPair<String,TValue>.Create('alpha_initializer', alpha_initializer));
+    Parameters.Add( TPair<String,TValue>.Create('alpha_regularizer', alpha_regularizer));
+    Parameters.Add( TPair<String,TValue>.Create('alpha_constraint', alpha_constraint));
 
-    if shared_axes <> nil then Parameters.Add( TPair<AnsiString,TValue>.Create('shared_axes',TValue.FromArray<Integer>(shared_axes)))
-    else                       Parameters.Add( TPair<AnsiString,TValue>.Create('shared_axes', TPythonObject.None ));
+    if shared_axes <> nil then Parameters.Add( TPair<String,TValue>.Create('shared_axes',TValue.FromArray<Integer>(shared_axes)))
+    else                       Parameters.Add( TPair<String,TValue>.Create('shared_axes', TPythonObject.None ));
 
     PyInstance := GetKerasClassIstance('layers.PReLU');
     Init;
@@ -1126,7 +1136,7 @@ constructor TELU.Create(alpha: Double);
 begin
     inherited Create;
 
-    Parameters.Add( TPair<AnsiString,TValue>.Create('alpha', alpha));
+    Parameters.Add( TPair<String,TValue>.Create('alpha', alpha));
 
     PyInstance := GetKerasClassIstance('layers.ELU');
     Init;
@@ -1138,7 +1148,7 @@ constructor TThresholdedReLU.Create(theta: Double);
 begin
     inherited Create;
 
-    Parameters.Add( TPair<AnsiString,TValue>.Create('theta', theta));
+    Parameters.Add( TPair<String,TValue>.Create('theta', theta));
 
     PyInstance := GetKerasClassIstance('layers.ThresholdedReLU');
     Init;
@@ -1150,7 +1160,7 @@ constructor TSoftmax.Create(axis: Integer);
 begin
     inherited Create;
 
-    Parameters.Add( TPair<AnsiString,TValue>.Create('axis', axis));
+    Parameters.Add( TPair<String,TValue>.Create('axis', axis));
 
     PyInstance := GetKerasClassIstance('layers.Softmax');
     Init;
@@ -1162,11 +1172,11 @@ constructor TReLU.Create(max_value:PDouble; negative_slope: Double; threshold: D
 begin
     inherited Create;
 
-    if max_value <> nil then Parameters.Add( TPair<AnsiString,TValue>.Create('max_value',max_value^))
-    else                     Parameters.Add( TPair<AnsiString,TValue>.Create('max_value', TPythonObject.None ));
+    if max_value <> nil then Parameters.Add( TPair<String,TValue>.Create('max_value',max_value^))
+    else                     Parameters.Add( TPair<String,TValue>.Create('max_value', TPythonObject.None ));
 
-    Parameters.Add( TPair<AnsiString,TValue>.Create('negative_slope', negative_slope));
-    Parameters.Add( TPair<AnsiString,TValue>.Create('threshold', threshold));
+    Parameters.Add( TPair<String,TValue>.Create('negative_slope', negative_slope));
+    Parameters.Add( TPair<String,TValue>.Create('threshold', threshold));
 
 
     PyInstance := GetKerasClassIstance('layers.ReLU');
@@ -1181,24 +1191,24 @@ constructor TConv1D.Create(filters, kernel_size, strides: Integer; padding, data
 begin
     inherited Create;
 
-    Parameters.Add( TPair<AnsiString,TValue>.Create('filters',filters));
-    Parameters.Add( TPair<AnsiString,TValue>.Create('kernel_size',kernel_size));
-    Parameters.Add( TPair<AnsiString,TValue>.Create('strides',strides));
-    Parameters.Add( TPair<AnsiString,TValue>.Create('padding',padding));
-    Parameters.Add( TPair<AnsiString,TValue>.Create('data_format',data_format));
-    Parameters.Add( TPair<AnsiString,TValue>.Create('dilation_rate',dilation_rate));
-    Parameters.Add( TPair<AnsiString,TValue>.Create('activation',activation));
-    Parameters.Add( TPair<AnsiString,TValue>.Create('use_bias',use_bias));
-    Parameters.Add( TPair<AnsiString,TValue>.Create('kernel_initializer',kernel_initializer));
-    Parameters.Add( TPair<AnsiString,TValue>.Create('bias_initializer',bias_initializer));
-    Parameters.Add( TPair<AnsiString,TValue>.Create('kernel_regularizer',kernel_regularizer));
-    Parameters.Add( TPair<AnsiString,TValue>.Create('bias_regularizer',bias_regularizer));
-    Parameters.Add( TPair<AnsiString,TValue>.Create('activity_regularizer',activity_regularizer));
-    Parameters.Add( TPair<AnsiString,TValue>.Create('kernel_constraint',kernel_constraint));
-    Parameters.Add( TPair<AnsiString,TValue>.Create('bias_constraint',bias_constraint));
+    Parameters.Add( TPair<String,TValue>.Create('filters',filters));
+    Parameters.Add( TPair<String,TValue>.Create('kernel_size',kernel_size));
+    Parameters.Add( TPair<String,TValue>.Create('strides',strides));
+    Parameters.Add( TPair<String,TValue>.Create('padding',padding));
+    Parameters.Add( TPair<String,TValue>.Create('data_format',data_format));
+    Parameters.Add( TPair<String,TValue>.Create('dilation_rate',dilation_rate));
+    Parameters.Add( TPair<String,TValue>.Create('activation',activation));
+    Parameters.Add( TPair<String,TValue>.Create('use_bias',use_bias));
+    Parameters.Add( TPair<String,TValue>.Create('kernel_initializer',kernel_initializer));
+    Parameters.Add( TPair<String,TValue>.Create('bias_initializer',bias_initializer));
+    Parameters.Add( TPair<String,TValue>.Create('kernel_regularizer',kernel_regularizer));
+    Parameters.Add( TPair<String,TValue>.Create('bias_regularizer',bias_regularizer));
+    Parameters.Add( TPair<String,TValue>.Create('activity_regularizer',activity_regularizer));
+    Parameters.Add( TPair<String,TValue>.Create('kernel_constraint',kernel_constraint));
+    Parameters.Add( TPair<String,TValue>.Create('bias_constraint',bias_constraint));
 
-    if input_shape <> nil then Parameters.Add( TPair<AnsiString,TValue>.Create('input_shape',TValue.FromShape(input_shape^)))
-    else                       Parameters.Add( TPair<AnsiString,TValue>.Create('input_shape', TPythonObject.None ));
+    if input_shape <> nil then Parameters.Add( TPair<String,TValue>.Create('input_shape',TValue.FromShape(input_shape^)))
+    else                       Parameters.Add( TPair<String,TValue>.Create('input_shape', TPythonObject.None ));
 
     PyInstance := GetKerasClassIstance('layers.Conv1D');
     Init;
@@ -1224,24 +1234,24 @@ begin
     else                        drate := TValue.FromShape( Tnp_Shape.Create([dilation_rate[0], dilation_rate[1]]) );
 
 
-    Parameters.Add( TPair<AnsiString,TValue>.Create('filters',filters));
-    Parameters.Add( TPair<AnsiString,TValue>.Create('kernel_size', ksize ));
-    Parameters.Add( TPair<AnsiString,TValue>.Create('strides',stride ));
-    Parameters.Add( TPair<AnsiString,TValue>.Create('padding',padding));
-    Parameters.Add( TPair<AnsiString,TValue>.Create('data_format',data_format));
-    Parameters.Add( TPair<AnsiString,TValue>.Create('dilation_rate',drate));
-    Parameters.Add( TPair<AnsiString,TValue>.Create('activation',activation));
-    Parameters.Add( TPair<AnsiString,TValue>.Create('use_bias',use_bias));
-    Parameters.Add( TPair<AnsiString,TValue>.Create('kernel_initializer',kernel_initializer));
-    Parameters.Add( TPair<AnsiString,TValue>.Create('bias_initializer',bias_initializer));
-    Parameters.Add( TPair<AnsiString,TValue>.Create('kernel_regularizer',kernel_regularizer));
-    Parameters.Add( TPair<AnsiString,TValue>.Create('bias_regularizer',bias_regularizer));
-    Parameters.Add( TPair<AnsiString,TValue>.Create('activity_regularizer',activity_regularizer));
-    Parameters.Add( TPair<AnsiString,TValue>.Create('kernel_constraint',kernel_constraint));
-    Parameters.Add( TPair<AnsiString,TValue>.Create('bias_constraint',bias_constraint));
+    Parameters.Add( TPair<String,TValue>.Create('filters',filters));
+    Parameters.Add( TPair<String,TValue>.Create('kernel_size', ksize ));
+    Parameters.Add( TPair<String,TValue>.Create('strides',stride ));
+    Parameters.Add( TPair<String,TValue>.Create('padding',padding));
+    Parameters.Add( TPair<String,TValue>.Create('data_format',data_format));
+    Parameters.Add( TPair<String,TValue>.Create('dilation_rate',drate));
+    Parameters.Add( TPair<String,TValue>.Create('activation',activation));
+    Parameters.Add( TPair<String,TValue>.Create('use_bias',use_bias));
+    Parameters.Add( TPair<String,TValue>.Create('kernel_initializer',kernel_initializer));
+    Parameters.Add( TPair<String,TValue>.Create('bias_initializer',bias_initializer));
+    Parameters.Add( TPair<String,TValue>.Create('kernel_regularizer',kernel_regularizer));
+    Parameters.Add( TPair<String,TValue>.Create('bias_regularizer',bias_regularizer));
+    Parameters.Add( TPair<String,TValue>.Create('activity_regularizer',activity_regularizer));
+    Parameters.Add( TPair<String,TValue>.Create('kernel_constraint',kernel_constraint));
+    Parameters.Add( TPair<String,TValue>.Create('bias_constraint',bias_constraint));
 
-    if input_shape <> nil then Parameters.Add( TPair<AnsiString,TValue>.Create('input_shape',TValue.FromShape(input_shape^)))
-    else                       Parameters.Add( TPair<AnsiString,TValue>.Create('input_shape', TPythonObject.None ));
+    if input_shape <> nil then Parameters.Add( TPair<String,TValue>.Create('input_shape',TValue.FromShape(input_shape^)))
+    else                       Parameters.Add( TPair<String,TValue>.Create('input_shape', TPythonObject.None ));
 
 
     PyInstance := GetKerasClassIstance('layers.Conv2D');
@@ -1250,18 +1260,18 @@ end;
 
 constructor TConv2D.Create(filters: Integer; kernel_size: TArray<Integer>; activation: string; input_shape: PTnp_Shape);
 var
-  ksize, stride,drate : TValue;
+  ksize : TValue;
 begin
     inherited Create;
 
     ksize := TValue.FromShape( Tnp_Shape.Create([kernel_size[0], kernel_size[1]]) );
 
-    Parameters.Add( TPair<AnsiString,TValue>.Create('filters',filters));
-    Parameters.Add( TPair<AnsiString,TValue>.Create('kernel_size', ksize ));
-    Parameters.Add( TPair<AnsiString,TValue>.Create('activation',activation));
+    Parameters.Add( TPair<String,TValue>.Create('filters',filters));
+    Parameters.Add( TPair<String,TValue>.Create('kernel_size', ksize ));
+    Parameters.Add( TPair<String,TValue>.Create('activation',activation));
 
-    if input_shape <> nil then Parameters.Add( TPair<AnsiString,TValue>.Create('input_shape',TValue.FromShape(input_shape^)))
-    else                       Parameters.Add( TPair<AnsiString,TValue>.Create('input_shape', TPythonObject.None ));
+    if input_shape <> nil then Parameters.Add( TPair<String,TValue>.Create('input_shape',TValue.FromShape(input_shape^)))
+    else                       Parameters.Add( TPair<String,TValue>.Create('input_shape', TPythonObject.None ));
 
 
     PyInstance := GetKerasClassIstance('layers.Conv2D');
@@ -1272,15 +1282,15 @@ end;
 
 constructor TConv2D.Create(filters: Integer; kernel_size: TArray<Integer>; activation: string);
 var
-  ksize, stride,drate : TValue;
+  ksize : TValue;
 begin
     inherited Create;
 
     ksize := TValue.FromShape( Tnp_Shape.Create([kernel_size[0], kernel_size[1]]) );
 
-    Parameters.Add( TPair<AnsiString,TValue>.Create('filters',filters));
-    Parameters.Add( TPair<AnsiString,TValue>.Create('kernel_size', ksize ));
-    Parameters.Add( TPair<AnsiString,TValue>.Create('activation',activation));
+    Parameters.Add( TPair<String,TValue>.Create('filters',filters));
+    Parameters.Add( TPair<String,TValue>.Create('kernel_size', ksize ));
+    Parameters.Add( TPair<String,TValue>.Create('activation',activation));
 
     PyInstance := GetKerasClassIstance('layers.Conv2D');
     Init;
@@ -1306,24 +1316,24 @@ begin
     if dilation_rate = nil then drate := TValue.FromShape( Tnp_Shape.Create([1, 1, 1]) )
     else                        drate := TValue.FromShape( Tnp_Shape.Create([dilation_rate[0], dilation_rate[1], dilation_rate[2]]) );
 
-    Parameters.Add( TPair<AnsiString,TValue>.Create('filters',filters));
-    Parameters.Add( TPair<AnsiString,TValue>.Create('kernel_size',ksize));
-    Parameters.Add( TPair<AnsiString,TValue>.Create('strides',stride));
-    Parameters.Add( TPair<AnsiString,TValue>.Create('padding',padding));
-    Parameters.Add( TPair<AnsiString,TValue>.Create('data_format',data_format));
-    Parameters.Add( TPair<AnsiString,TValue>.Create('dilation_rate',drate ));
-    Parameters.Add( TPair<AnsiString,TValue>.Create('activation',activation));
-    Parameters.Add( TPair<AnsiString,TValue>.Create('use_bias',use_bias));
-    Parameters.Add( TPair<AnsiString,TValue>.Create('kernel_initializer',kernel_initializer));
-    Parameters.Add( TPair<AnsiString,TValue>.Create('bias_initializer',bias_initializer));
-    Parameters.Add( TPair<AnsiString,TValue>.Create('kernel_regularizer',kernel_regularizer));
-    Parameters.Add( TPair<AnsiString,TValue>.Create('bias_regularizer',bias_regularizer));
-    Parameters.Add( TPair<AnsiString,TValue>.Create('activity_regularizer',activity_regularizer));
-    Parameters.Add( TPair<AnsiString,TValue>.Create('kernel_constraint',kernel_constraint));
-    Parameters.Add( TPair<AnsiString,TValue>.Create('bias_constraint',bias_constraint));
+    Parameters.Add( TPair<String,TValue>.Create('filters',filters));
+    Parameters.Add( TPair<String,TValue>.Create('kernel_size',ksize));
+    Parameters.Add( TPair<String,TValue>.Create('strides',stride));
+    Parameters.Add( TPair<String,TValue>.Create('padding',padding));
+    Parameters.Add( TPair<String,TValue>.Create('data_format',data_format));
+    Parameters.Add( TPair<String,TValue>.Create('dilation_rate',drate ));
+    Parameters.Add( TPair<String,TValue>.Create('activation',activation));
+    Parameters.Add( TPair<String,TValue>.Create('use_bias',use_bias));
+    Parameters.Add( TPair<String,TValue>.Create('kernel_initializer',kernel_initializer));
+    Parameters.Add( TPair<String,TValue>.Create('bias_initializer',bias_initializer));
+    Parameters.Add( TPair<String,TValue>.Create('kernel_regularizer',kernel_regularizer));
+    Parameters.Add( TPair<String,TValue>.Create('bias_regularizer',bias_regularizer));
+    Parameters.Add( TPair<String,TValue>.Create('activity_regularizer',activity_regularizer));
+    Parameters.Add( TPair<String,TValue>.Create('kernel_constraint',kernel_constraint));
+    Parameters.Add( TPair<String,TValue>.Create('bias_constraint',bias_constraint));
 
-    if input_shape <> nil then Parameters.Add( TPair<AnsiString,TValue>.Create('input_shape',TValue.FromShape(input_shape^)))
-    else                       Parameters.Add( TPair<AnsiString,TValue>.Create('input_shape', TPythonObject.None ));
+    if input_shape <> nil then Parameters.Add( TPair<String,TValue>.Create('input_shape',TValue.FromShape(input_shape^)))
+    else                       Parameters.Add( TPair<String,TValue>.Create('input_shape', TPythonObject.None ));
 
     PyInstance := GetKerasClassIstance('layers.Conv3D');
     Init;
@@ -1338,29 +1348,29 @@ constructor TSeparableConv1D.Create(filters, kernel_size, strides: Integer; padd
 begin
     inherited Create;
 
-    Parameters.Add( TPair<AnsiString,TValue>.Create('filters',filters));
-    Parameters.Add( TPair<AnsiString,TValue>.Create('kernel_size',kernel_size));
-    Parameters.Add( TPair<AnsiString,TValue>.Create('strides',strides));
-    Parameters.Add( TPair<AnsiString,TValue>.Create('padding',padding));
-    Parameters.Add( TPair<AnsiString,TValue>.Create('data_format',data_format));
-    Parameters.Add( TPair<AnsiString,TValue>.Create('dilation_rate',dilation_rate));
-    Parameters.Add( TPair<AnsiString,TValue>.Create('depth_multiplier',depth_multiplier));
-    Parameters.Add( TPair<AnsiString,TValue>.Create('activation',activation));
-    Parameters.Add( TPair<AnsiString,TValue>.Create('use_bias',use_bias));
-    Parameters.Add( TPair<AnsiString,TValue>.Create('depthwise_initializer',depthwise_initializer));
-    Parameters.Add( TPair<AnsiString,TValue>.Create('pointwise_initializer',pointwise_initializer));
-    Parameters.Add( TPair<AnsiString,TValue>.Create('bias_initializer',bias_initializer));
-    Parameters.Add( TPair<AnsiString,TValue>.Create('depthwise_regularizer',depthwise_regularizer));
-    Parameters.Add( TPair<AnsiString,TValue>.Create('bias_initializer',bias_initializer));
-    Parameters.Add( TPair<AnsiString,TValue>.Create('pointwise_regularizer',pointwise_regularizer));
-    Parameters.Add( TPair<AnsiString,TValue>.Create('bias_regularizer',bias_regularizer));
-    Parameters.Add( TPair<AnsiString,TValue>.Create('activity_regularizer',activity_regularizer));
-    Parameters.Add( TPair<AnsiString,TValue>.Create('depthwise_constraint',depthwise_constraint));
-    Parameters.Add( TPair<AnsiString,TValue>.Create('pointwise_constraint',pointwise_constraint));
-    Parameters.Add( TPair<AnsiString,TValue>.Create('bias_constraint',bias_constraint));
+    Parameters.Add( TPair<String,TValue>.Create('filters',filters));
+    Parameters.Add( TPair<String,TValue>.Create('kernel_size',kernel_size));
+    Parameters.Add( TPair<String,TValue>.Create('strides',strides));
+    Parameters.Add( TPair<String,TValue>.Create('padding',padding));
+    Parameters.Add( TPair<String,TValue>.Create('data_format',data_format));
+    Parameters.Add( TPair<String,TValue>.Create('dilation_rate',dilation_rate));
+    Parameters.Add( TPair<String,TValue>.Create('depth_multiplier',depth_multiplier));
+    Parameters.Add( TPair<String,TValue>.Create('activation',activation));
+    Parameters.Add( TPair<String,TValue>.Create('use_bias',use_bias));
+    Parameters.Add( TPair<String,TValue>.Create('depthwise_initializer',depthwise_initializer));
+    Parameters.Add( TPair<String,TValue>.Create('pointwise_initializer',pointwise_initializer));
+    Parameters.Add( TPair<String,TValue>.Create('bias_initializer',bias_initializer));
+    Parameters.Add( TPair<String,TValue>.Create('depthwise_regularizer',depthwise_regularizer));
+    Parameters.Add( TPair<String,TValue>.Create('bias_initializer',bias_initializer));
+    Parameters.Add( TPair<String,TValue>.Create('pointwise_regularizer',pointwise_regularizer));
+    Parameters.Add( TPair<String,TValue>.Create('bias_regularizer',bias_regularizer));
+    Parameters.Add( TPair<String,TValue>.Create('activity_regularizer',activity_regularizer));
+    Parameters.Add( TPair<String,TValue>.Create('depthwise_constraint',depthwise_constraint));
+    Parameters.Add( TPair<String,TValue>.Create('pointwise_constraint',pointwise_constraint));
+    Parameters.Add( TPair<String,TValue>.Create('bias_constraint',bias_constraint));
 
-    if input_shape <> nil then Parameters.Add( TPair<AnsiString,TValue>.Create('input_shape',TValue.FromShape(input_shape^)))
-    else                       Parameters.Add( TPair<AnsiString,TValue>.Create('input_shape', TPythonObject.None ));
+    if input_shape <> nil then Parameters.Add( TPair<String,TValue>.Create('input_shape',TValue.FromShape(input_shape^)))
+    else                       Parameters.Add( TPair<String,TValue>.Create('input_shape', TPythonObject.None ));
 
     PyInstance := GetKerasClassIstance('layers.SeparableConv1D');
     Init;
@@ -1385,29 +1395,29 @@ begin
     if dilation_rate = nil then drate := TValue.FromShape( Tnp_Shape.Create([1, 1]) )
     else                        drate := TValue.FromShape( Tnp_Shape.Create([dilation_rate[0], dilation_rate[1]]) );
 
-    Parameters.Add( TPair<AnsiString,TValue>.Create('filters',filters));
-    Parameters.Add( TPair<AnsiString,TValue>.Create('kernel_size',ksize));
-    Parameters.Add( TPair<AnsiString,TValue>.Create('strides',stride));
-    Parameters.Add( TPair<AnsiString,TValue>.Create('padding',padding));
-    Parameters.Add( TPair<AnsiString,TValue>.Create('data_format',data_format));
-    Parameters.Add( TPair<AnsiString,TValue>.Create('dilation_rate',drate)) ;
-    Parameters.Add( TPair<AnsiString,TValue>.Create('depth_multiplier',depth_multiplier));
-    Parameters.Add( TPair<AnsiString,TValue>.Create('activation',activation));
-    Parameters.Add( TPair<AnsiString,TValue>.Create('use_bias',use_bias));
-    Parameters.Add( TPair<AnsiString,TValue>.Create('depthwise_initializer',depthwise_initializer));
-    Parameters.Add( TPair<AnsiString,TValue>.Create('pointwise_initializer',pointwise_initializer));
-    Parameters.Add( TPair<AnsiString,TValue>.Create('bias_initializer',bias_initializer));
-    Parameters.Add( TPair<AnsiString,TValue>.Create('depthwise_regularizer',depthwise_regularizer));
-    Parameters.Add( TPair<AnsiString,TValue>.Create('bias_initializer',bias_initializer));
-    Parameters.Add( TPair<AnsiString,TValue>.Create('pointwise_regularizer',pointwise_regularizer));
-    Parameters.Add( TPair<AnsiString,TValue>.Create('bias_regularizer',bias_regularizer));
-    Parameters.Add( TPair<AnsiString,TValue>.Create('activity_regularizer',activity_regularizer));
-    Parameters.Add( TPair<AnsiString,TValue>.Create('depthwise_constraint',depthwise_constraint));
-    Parameters.Add( TPair<AnsiString,TValue>.Create('pointwise_constraint',pointwise_constraint));
-    Parameters.Add( TPair<AnsiString,TValue>.Create('bias_constraint',bias_constraint));
+    Parameters.Add( TPair<String,TValue>.Create('filters',filters));
+    Parameters.Add( TPair<String,TValue>.Create('kernel_size',ksize));
+    Parameters.Add( TPair<String,TValue>.Create('strides',stride));
+    Parameters.Add( TPair<String,TValue>.Create('padding',padding));
+    Parameters.Add( TPair<String,TValue>.Create('data_format',data_format));
+    Parameters.Add( TPair<String,TValue>.Create('dilation_rate',drate)) ;
+    Parameters.Add( TPair<String,TValue>.Create('depth_multiplier',depth_multiplier));
+    Parameters.Add( TPair<String,TValue>.Create('activation',activation));
+    Parameters.Add( TPair<String,TValue>.Create('use_bias',use_bias));
+    Parameters.Add( TPair<String,TValue>.Create('depthwise_initializer',depthwise_initializer));
+    Parameters.Add( TPair<String,TValue>.Create('pointwise_initializer',pointwise_initializer));
+    Parameters.Add( TPair<String,TValue>.Create('bias_initializer',bias_initializer));
+    Parameters.Add( TPair<String,TValue>.Create('depthwise_regularizer',depthwise_regularizer));
+    Parameters.Add( TPair<String,TValue>.Create('bias_initializer',bias_initializer));
+    Parameters.Add( TPair<String,TValue>.Create('pointwise_regularizer',pointwise_regularizer));
+    Parameters.Add( TPair<String,TValue>.Create('bias_regularizer',bias_regularizer));
+    Parameters.Add( TPair<String,TValue>.Create('activity_regularizer',activity_regularizer));
+    Parameters.Add( TPair<String,TValue>.Create('depthwise_constraint',depthwise_constraint));
+    Parameters.Add( TPair<String,TValue>.Create('pointwise_constraint',pointwise_constraint));
+    Parameters.Add( TPair<String,TValue>.Create('bias_constraint',bias_constraint));
 
-    if input_shape <> nil then Parameters.Add( TPair<AnsiString,TValue>.Create('input_shape',TValue.FromShape(input_shape^)))
-    else                       Parameters.Add( TPair<AnsiString,TValue>.Create('input_shape', TPythonObject.None ));
+    if input_shape <> nil then Parameters.Add( TPair<String,TValue>.Create('input_shape',TValue.FromShape(input_shape^)))
+    else                       Parameters.Add( TPair<String,TValue>.Create('input_shape', TPythonObject.None ));
 
     PyInstance := GetKerasClassIstance('layers.SeparableConv2D');
     Init;
@@ -1429,24 +1439,24 @@ begin
     if strides = nil then stride := TValue.FromShape( Tnp_Shape.Create([1, 1]) )
     else                  stride := TValue.FromShape( Tnp_Shape.Create([strides[0], strides[1]]) );
 
-    Parameters.Add( TPair<AnsiString,TValue>.Create('kernel_size',ksize));
-    Parameters.Add( TPair<AnsiString,TValue>.Create('strides',stride));
-    Parameters.Add( TPair<AnsiString,TValue>.Create('padding',padding));
-    Parameters.Add( TPair<AnsiString,TValue>.Create('depth_multiplier',depth_multiplier));
-    Parameters.Add( TPair<AnsiString,TValue>.Create('data_format',data_format));
-    Parameters.Add( TPair<AnsiString,TValue>.Create('activation',activation));
-    Parameters.Add( TPair<AnsiString,TValue>.Create('use_bias',use_bias));
-    Parameters.Add( TPair<AnsiString,TValue>.Create('depthwise_initializer',depthwise_initializer));
-    Parameters.Add( TPair<AnsiString,TValue>.Create('bias_initializer',bias_initializer));
-    Parameters.Add( TPair<AnsiString,TValue>.Create('depthwise_regularizer',depthwise_regularizer));
-    Parameters.Add( TPair<AnsiString,TValue>.Create('bias_initializer',bias_initializer));
-    Parameters.Add( TPair<AnsiString,TValue>.Create('bias_regularizer',bias_regularizer));
-    Parameters.Add( TPair<AnsiString,TValue>.Create('activity_regularizer',activity_regularizer));
-    Parameters.Add( TPair<AnsiString,TValue>.Create('depthwise_constraint',depthwise_constraint));
-    Parameters.Add( TPair<AnsiString,TValue>.Create('bias_constraint',bias_constraint));
+    Parameters.Add( TPair<String,TValue>.Create('kernel_size',ksize));
+    Parameters.Add( TPair<String,TValue>.Create('strides',stride));
+    Parameters.Add( TPair<String,TValue>.Create('padding',padding));
+    Parameters.Add( TPair<String,TValue>.Create('depth_multiplier',depth_multiplier));
+    Parameters.Add( TPair<String,TValue>.Create('data_format',data_format));
+    Parameters.Add( TPair<String,TValue>.Create('activation',activation));
+    Parameters.Add( TPair<String,TValue>.Create('use_bias',use_bias));
+    Parameters.Add( TPair<String,TValue>.Create('depthwise_initializer',depthwise_initializer));
+    Parameters.Add( TPair<String,TValue>.Create('bias_initializer',bias_initializer));
+    Parameters.Add( TPair<String,TValue>.Create('depthwise_regularizer',depthwise_regularizer));
+    Parameters.Add( TPair<String,TValue>.Create('bias_initializer',bias_initializer));
+    Parameters.Add( TPair<String,TValue>.Create('bias_regularizer',bias_regularizer));
+    Parameters.Add( TPair<String,TValue>.Create('activity_regularizer',activity_regularizer));
+    Parameters.Add( TPair<String,TValue>.Create('depthwise_constraint',depthwise_constraint));
+    Parameters.Add( TPair<String,TValue>.Create('bias_constraint',bias_constraint));
 
-    if input_shape <> nil then Parameters.Add( TPair<AnsiString,TValue>.Create('input_shape',TValue.FromShape(input_shape^)))
-    else                       Parameters.Add( TPair<AnsiString,TValue>.Create('input_shape', TPythonObject.None ));
+    if input_shape <> nil then Parameters.Add( TPair<String,TValue>.Create('input_shape',TValue.FromShape(input_shape^)))
+    else                       Parameters.Add( TPair<String,TValue>.Create('input_shape', TPythonObject.None ));
 
     PyInstance := GetKerasClassIstance('layers.DepthwiseConv2D');
     Init;
@@ -1472,25 +1482,25 @@ begin
     if dilation_rate = nil then drate := TValue.FromShape( Tnp_Shape.Create([1, 1]) )
     else                        drate := TValue.FromShape( Tnp_Shape.Create([dilation_rate[0], dilation_rate[1]]) );
 
-    Parameters.Add( TPair<AnsiString,TValue>.Create('filters',filters));
-    Parameters.Add( TPair<AnsiString,TValue>.Create('kernel_size',ksize));
-    Parameters.Add( TPair<AnsiString,TValue>.Create('strides',stride));
-    Parameters.Add( TPair<AnsiString,TValue>.Create('padding',padding));
-    Parameters.Add( TPair<AnsiString,TValue>.Create('output_padding',TValue.FromArray<Integer>(output_padding) ));
-    Parameters.Add( TPair<AnsiString,TValue>.Create('data_format',data_format));
-    Parameters.Add( TPair<AnsiString,TValue>.Create('dilation_rate',drate)) ;
-    Parameters.Add( TPair<AnsiString,TValue>.Create('activation',activation));
-    Parameters.Add( TPair<AnsiString,TValue>.Create('use_bias',use_bias));
-    Parameters.Add( TPair<AnsiString,TValue>.Create('kernel_initializer',kernel_initializer));
-    Parameters.Add( TPair<AnsiString,TValue>.Create('bias_initializer',bias_initializer));
-    Parameters.Add( TPair<AnsiString,TValue>.Create('kernel_regularizer',kernel_regularizer));
-    Parameters.Add( TPair<AnsiString,TValue>.Create('bias_regularizer',bias_regularizer));
-    Parameters.Add( TPair<AnsiString,TValue>.Create('activity_regularizer',activity_regularizer));
-    Parameters.Add( TPair<AnsiString,TValue>.Create('kernel_constraint',kernel_constraint));
-    Parameters.Add( TPair<AnsiString,TValue>.Create('bias_constraint',bias_constraint));
+    Parameters.Add( TPair<String,TValue>.Create('filters',filters));
+    Parameters.Add( TPair<String,TValue>.Create('kernel_size',ksize));
+    Parameters.Add( TPair<String,TValue>.Create('strides',stride));
+    Parameters.Add( TPair<String,TValue>.Create('padding',padding));
+    Parameters.Add( TPair<String,TValue>.Create('output_padding',TValue.FromArray<Integer>(output_padding) ));
+    Parameters.Add( TPair<String,TValue>.Create('data_format',data_format));
+    Parameters.Add( TPair<String,TValue>.Create('dilation_rate',drate)) ;
+    Parameters.Add( TPair<String,TValue>.Create('activation',activation));
+    Parameters.Add( TPair<String,TValue>.Create('use_bias',use_bias));
+    Parameters.Add( TPair<String,TValue>.Create('kernel_initializer',kernel_initializer));
+    Parameters.Add( TPair<String,TValue>.Create('bias_initializer',bias_initializer));
+    Parameters.Add( TPair<String,TValue>.Create('kernel_regularizer',kernel_regularizer));
+    Parameters.Add( TPair<String,TValue>.Create('bias_regularizer',bias_regularizer));
+    Parameters.Add( TPair<String,TValue>.Create('activity_regularizer',activity_regularizer));
+    Parameters.Add( TPair<String,TValue>.Create('kernel_constraint',kernel_constraint));
+    Parameters.Add( TPair<String,TValue>.Create('bias_constraint',bias_constraint));
 
-    if input_shape <> nil then Parameters.Add( TPair<AnsiString,TValue>.Create('input_shape',TValue.FromShape(input_shape^)))
-    else                       Parameters.Add( TPair<AnsiString,TValue>.Create('input_shape', TPythonObject.None ));
+    if input_shape <> nil then Parameters.Add( TPair<String,TValue>.Create('input_shape',TValue.FromShape(input_shape^)))
+    else                       Parameters.Add( TPair<String,TValue>.Create('input_shape', TPythonObject.None ));
 
     PyInstance := GetKerasClassIstance('layers.Conv2DTranspose');
     Init;
@@ -1516,25 +1526,25 @@ begin
     if dilation_rate = nil then drate := TValue.FromShape( Tnp_Shape.Create([1, 1, 1]) )
     else                        drate := TValue.FromShape( Tnp_Shape.Create([dilation_rate[0], dilation_rate[1], dilation_rate[2]]) );
 
-    Parameters.Add( TPair<AnsiString,TValue>.Create('filters',filters));
-    Parameters.Add( TPair<AnsiString,TValue>.Create('kernel_size',ksize));
-    Parameters.Add( TPair<AnsiString,TValue>.Create('strides',stride));
-    Parameters.Add( TPair<AnsiString,TValue>.Create('padding',padding));
-    Parameters.Add( TPair<AnsiString,TValue>.Create('output_padding',TValue.FromArray<Integer>(output_padding) ));
-    Parameters.Add( TPair<AnsiString,TValue>.Create('data_format',data_format));
-    Parameters.Add( TPair<AnsiString,TValue>.Create('dilation_rate',drate));
-    Parameters.Add( TPair<AnsiString,TValue>.Create('activation',activation));
-    Parameters.Add( TPair<AnsiString,TValue>.Create('use_bias',use_bias));
-    Parameters.Add( TPair<AnsiString,TValue>.Create('kernel_initializer',kernel_initializer));
-    Parameters.Add( TPair<AnsiString,TValue>.Create('bias_initializer',bias_initializer));
-    Parameters.Add( TPair<AnsiString,TValue>.Create('kernel_regularizer',kernel_regularizer));
-    Parameters.Add( TPair<AnsiString,TValue>.Create('bias_regularizer',bias_regularizer));
-    Parameters.Add( TPair<AnsiString,TValue>.Create('activity_regularizer',activity_regularizer));
-    Parameters.Add( TPair<AnsiString,TValue>.Create('kernel_constraint',kernel_constraint));
-    Parameters.Add( TPair<AnsiString,TValue>.Create('bias_constraint',bias_constraint));
+    Parameters.Add( TPair<String,TValue>.Create('filters',filters));
+    Parameters.Add( TPair<String,TValue>.Create('kernel_size',ksize));
+    Parameters.Add( TPair<String,TValue>.Create('strides',stride));
+    Parameters.Add( TPair<String,TValue>.Create('padding',padding));
+    Parameters.Add( TPair<String,TValue>.Create('output_padding',TValue.FromArray<Integer>(output_padding) ));
+    Parameters.Add( TPair<String,TValue>.Create('data_format',data_format));
+    Parameters.Add( TPair<String,TValue>.Create('dilation_rate',drate));
+    Parameters.Add( TPair<String,TValue>.Create('activation',activation));
+    Parameters.Add( TPair<String,TValue>.Create('use_bias',use_bias));
+    Parameters.Add( TPair<String,TValue>.Create('kernel_initializer',kernel_initializer));
+    Parameters.Add( TPair<String,TValue>.Create('bias_initializer',bias_initializer));
+    Parameters.Add( TPair<String,TValue>.Create('kernel_regularizer',kernel_regularizer));
+    Parameters.Add( TPair<String,TValue>.Create('bias_regularizer',bias_regularizer));
+    Parameters.Add( TPair<String,TValue>.Create('activity_regularizer',activity_regularizer));
+    Parameters.Add( TPair<String,TValue>.Create('kernel_constraint',kernel_constraint));
+    Parameters.Add( TPair<String,TValue>.Create('bias_constraint',bias_constraint));
 
-    if input_shape <> nil then Parameters.Add( TPair<AnsiString,TValue>.Create('input_shape',TValue.FromShape(input_shape^)))
-    else                       Parameters.Add( TPair<AnsiString,TValue>.Create('input_shape', TPythonObject.None ));
+    if input_shape <> nil then Parameters.Add( TPair<String,TValue>.Create('input_shape',TValue.FromShape(input_shape^)))
+    else                       Parameters.Add( TPair<String,TValue>.Create('input_shape', TPythonObject.None ));
 
     PyInstance := GetKerasClassIstance('layers.Conv3DTranspose');
     Init;
@@ -1551,10 +1561,10 @@ begin
 
     ksize := TValue.FromShape( Tnp_Shape.Create([cropping[0], cropping[1]]) );
 
-    Parameters.Add( TPair<AnsiString,TValue>.Create('cropping',ksize));
+    Parameters.Add( TPair<String,TValue>.Create('cropping',ksize));
 
-    if input_shape <> nil then Parameters.Add( TPair<AnsiString,TValue>.Create('input_shape',TValue.FromShape(input_shape^)))
-    else                       Parameters.Add( TPair<AnsiString,TValue>.Create('input_shape', TPythonObject.None ));
+    if input_shape <> nil then Parameters.Add( TPair<String,TValue>.Create('input_shape',TValue.FromShape(input_shape^)))
+    else                       Parameters.Add( TPair<String,TValue>.Create('input_shape', TPythonObject.None ));
 
     PyInstance := GetKerasClassIstance('layers.Cropping1D');
     Init;
@@ -1576,11 +1586,11 @@ begin
 
     ksize := TValue.FromArray<Tnp_Shape>( crop );
 
-    Parameters.Add( TPair<AnsiString,TValue>.Create('cropping',ksize));
-    Parameters.Add( TPair<AnsiString,TValue>.Create('data_format',data_format));
+    Parameters.Add( TPair<String,TValue>.Create('cropping',ksize));
+    Parameters.Add( TPair<String,TValue>.Create('data_format',data_format));
 
-    if input_shape <> nil then Parameters.Add( TPair<AnsiString,TValue>.Create('input_shape',TValue.FromShape(input_shape^)))
-    else                       Parameters.Add( TPair<AnsiString,TValue>.Create('input_shape', TPythonObject.None ));
+    if input_shape <> nil then Parameters.Add( TPair<String,TValue>.Create('input_shape',TValue.FromShape(input_shape^)))
+    else                       Parameters.Add( TPair<String,TValue>.Create('input_shape', TPythonObject.None ));
 
     PyInstance := GetKerasClassIstance('layers.Cropping2D');
     Init;
@@ -1603,11 +1613,11 @@ begin
 
     ksize := TValue.FromArray<Tnp_Shape>( crop );
 
-    Parameters.Add( TPair<AnsiString,TValue>.Create('cropping',ksize));
-    Parameters.Add( TPair<AnsiString,TValue>.Create('data_format',data_format));
+    Parameters.Add( TPair<String,TValue>.Create('cropping',ksize));
+    Parameters.Add( TPair<String,TValue>.Create('data_format',data_format));
 
-    if input_shape <> nil then Parameters.Add( TPair<AnsiString,TValue>.Create('input_shape',TValue.FromShape(input_shape^)))
-    else                       Parameters.Add( TPair<AnsiString,TValue>.Create('input_shape', TPythonObject.None ));
+    if input_shape <> nil then Parameters.Add( TPair<String,TValue>.Create('input_shape',TValue.FromShape(input_shape^)))
+    else                       Parameters.Add( TPair<String,TValue>.Create('input_shape', TPythonObject.None ));
 
     PyInstance := GetKerasClassIstance('layers.Cropping3D');
     Init;
@@ -1620,10 +1630,10 @@ constructor TUpSampling1D.Create(size: Integer; input_shape: PTnp_Shape);
 begin
     inherited Create;
 
-    Parameters.Add( TPair<AnsiString,TValue>.Create('size',size));
+    Parameters.Add( TPair<String,TValue>.Create('size',size));
 
-    if input_shape <> nil then Parameters.Add( TPair<AnsiString,TValue>.Create('input_shape',TValue.FromShape(input_shape^)))
-    else                       Parameters.Add( TPair<AnsiString,TValue>.Create('input_shape', TPythonObject.None ));
+    if input_shape <> nil then Parameters.Add( TPair<String,TValue>.Create('input_shape',TValue.FromShape(input_shape^)))
+    else                       Parameters.Add( TPair<String,TValue>.Create('input_shape', TPythonObject.None ));
 
     PyInstance := GetKerasClassIstance('layers.UpSampling1D');
     Init;
@@ -1640,12 +1650,12 @@ begin
     if size = nil then ksize := TValue.FromShape( Tnp_Shape.Create([2,2]) )
     else               ksize := TValue.FromShape( Tnp_Shape.Create([ size[0],size[1] ]) );
 
-    Parameters.Add( TPair<AnsiString,TValue>.Create('size',ksize));
-    Parameters.Add( TPair<AnsiString,TValue>.Create('data_format',data_format));
-    Parameters.Add( TPair<AnsiString,TValue>.Create('interpolation',interpolation));
+    Parameters.Add( TPair<String,TValue>.Create('size',ksize));
+    Parameters.Add( TPair<String,TValue>.Create('data_format',data_format));
+    Parameters.Add( TPair<String,TValue>.Create('interpolation',interpolation));
 
-    if input_shape <> nil then Parameters.Add( TPair<AnsiString,TValue>.Create('input_shape',TValue.FromShape(input_shape^)))
-    else                       Parameters.Add( TPair<AnsiString,TValue>.Create('input_shape', TPythonObject.None ));
+    if input_shape <> nil then Parameters.Add( TPair<String,TValue>.Create('input_shape',TValue.FromShape(input_shape^)))
+    else                       Parameters.Add( TPair<String,TValue>.Create('input_shape', TPythonObject.None ));
 
     PyInstance := GetKerasClassIstance('layers.UpSampling2D');
     Init;
@@ -1662,11 +1672,11 @@ begin
     if size = nil then ksize := TValue.FromShape( Tnp_Shape.Create([2,2,2]) )
     else               ksize := TValue.FromShape( Tnp_Shape.Create([ size[0],size[1],size[2] ]) );
 
-    Parameters.Add( TPair<AnsiString,TValue>.Create('size',ksize));
-    Parameters.Add( TPair<AnsiString,TValue>.Create('data_format',data_format));
+    Parameters.Add( TPair<String,TValue>.Create('size',ksize));
+    Parameters.Add( TPair<String,TValue>.Create('data_format',data_format));
 
-    if input_shape <> nil then Parameters.Add( TPair<AnsiString,TValue>.Create('input_shape',TValue.FromShape(input_shape^)))
-    else                       Parameters.Add( TPair<AnsiString,TValue>.Create('input_shape', TPythonObject.None ));
+    if input_shape <> nil then Parameters.Add( TPair<String,TValue>.Create('input_shape',TValue.FromShape(input_shape^)))
+    else                       Parameters.Add( TPair<String,TValue>.Create('input_shape', TPythonObject.None ));
 
     PyInstance := GetKerasClassIstance('layers.UpSampling3D');
     Init;
@@ -1679,10 +1689,10 @@ constructor TZeroPadding1D.Create(padding: Integer; input_shape: PTnp_Shape);
 begin
     inherited Create;
 
-    Parameters.Add( TPair<AnsiString,TValue>.Create('padding',padding));
+    Parameters.Add( TPair<String,TValue>.Create('padding',padding));
 
-    if input_shape <> nil then Parameters.Add( TPair<AnsiString,TValue>.Create('input_shape',TValue.FromShape(input_shape^)))
-    else                       Parameters.Add( TPair<AnsiString,TValue>.Create('input_shape', TPythonObject.None ));
+    if input_shape <> nil then Parameters.Add( TPair<String,TValue>.Create('input_shape',TValue.FromShape(input_shape^)))
+    else                       Parameters.Add( TPair<String,TValue>.Create('input_shape', TPythonObject.None ));
 
     PyInstance := GetKerasClassIstance('layers.ZeroPadding1D');
     Init;
@@ -1699,11 +1709,11 @@ begin
     if padding = nil then ksize := TValue.FromShape( Tnp_Shape.Create([2,2]) )
     else                  ksize := TValue.FromShape( Tnp_Shape.Create([ padding[0],padding[1] ]) );
 
-    Parameters.Add( TPair<AnsiString,TValue>.Create('padding',ksize));
-    Parameters.Add( TPair<AnsiString,TValue>.Create('data_format',data_format));
+    Parameters.Add( TPair<String,TValue>.Create('padding',ksize));
+    Parameters.Add( TPair<String,TValue>.Create('data_format',data_format));
 
-    if input_shape <> nil then Parameters.Add( TPair<AnsiString,TValue>.Create('input_shape',TValue.FromShape(input_shape^)))
-    else                       Parameters.Add( TPair<AnsiString,TValue>.Create('input_shape', TPythonObject.None ));
+    if input_shape <> nil then Parameters.Add( TPair<String,TValue>.Create('input_shape',TValue.FromShape(input_shape^)))
+    else                       Parameters.Add( TPair<String,TValue>.Create('input_shape', TPythonObject.None ));
 
     PyInstance := GetKerasClassIstance('layers.ZeroPadding2D');
     Init;
@@ -1720,11 +1730,11 @@ begin
     if padding = nil then ksize := TValue.FromShape( Tnp_Shape.Create([2,2,2]) )
     else                  ksize := TValue.FromShape( Tnp_Shape.Create([ padding[0],padding[1],padding[2] ]) );
 
-    Parameters.Add( TPair<AnsiString,TValue>.Create('padding',ksize));
-    Parameters.Add( TPair<AnsiString,TValue>.Create('data_format',data_format));
+    Parameters.Add( TPair<String,TValue>.Create('padding',ksize));
+    Parameters.Add( TPair<String,TValue>.Create('data_format',data_format));
 
-    if input_shape <> nil then Parameters.Add( TPair<AnsiString,TValue>.Create('input_shape',TValue.FromShape(input_shape^)))
-    else                       Parameters.Add( TPair<AnsiString,TValue>.Create('input_shape', TPythonObject.None ));
+    if input_shape <> nil then Parameters.Add( TPair<String,TValue>.Create('input_shape',TValue.FromShape(input_shape^)))
+    else                       Parameters.Add( TPair<String,TValue>.Create('input_shape', TPythonObject.None ));
 
     PyInstance := GetKerasClassIstance('layers.ZeroPadding3D');
     Init;
@@ -1739,19 +1749,19 @@ constructor TEmbedding.Create(input_dim, output_dim: Integer; embeddings_initial
 begin
     inherited Create;
 
-    Parameters.Add( TPair<AnsiString,TValue>.Create('input_dim',input_dim));
-    Parameters.Add( TPair<AnsiString,TValue>.Create('output_dim',output_dim));
-    Parameters.Add( TPair<AnsiString,TValue>.Create('embeddings_initializer',embeddings_initializer));
-    Parameters.Add( TPair<AnsiString,TValue>.Create('embeddings_regularizer',embeddings_regularizer));
-    Parameters.Add( TPair<AnsiString,TValue>.Create('activity_regularizer',activity_regularizer));
-    Parameters.Add( TPair<AnsiString,TValue>.Create('embeddings_constraint',embeddings_constraint));
-    Parameters.Add( TPair<AnsiString,TValue>.Create('mask_zero',mask_zero));
+    Parameters.Add( TPair<String,TValue>.Create('input_dim',input_dim));
+    Parameters.Add( TPair<String,TValue>.Create('output_dim',output_dim));
+    Parameters.Add( TPair<String,TValue>.Create('embeddings_initializer',embeddings_initializer));
+    Parameters.Add( TPair<String,TValue>.Create('embeddings_regularizer',embeddings_regularizer));
+    Parameters.Add( TPair<String,TValue>.Create('activity_regularizer',activity_regularizer));
+    Parameters.Add( TPair<String,TValue>.Create('embeddings_constraint',embeddings_constraint));
+    Parameters.Add( TPair<String,TValue>.Create('mask_zero',mask_zero));
 
-    if input_length <> nil then Parameters.Add( TPair<AnsiString,TValue>.Create('input_length',input_length^))
-    else                        Parameters.Add( TPair<AnsiString,TValue>.Create('input_length', TPythonObject.None ));
+    if input_length <> nil then Parameters.Add( TPair<String,TValue>.Create('input_length',input_length^))
+    else                        Parameters.Add( TPair<String,TValue>.Create('input_length', TPythonObject.None ));
 
-    if input_shape <> nil then Parameters.Add( TPair<AnsiString,TValue>.Create('input_shape',TValue.FromShape(input_shape^)))
-    else                       Parameters.Add( TPair<AnsiString,TValue>.Create('input_shape', TPythonObject.None ));
+    if input_shape <> nil then Parameters.Add( TPair<String,TValue>.Create('input_shape',TValue.FromShape(input_shape^)))
+    else                       Parameters.Add( TPair<String,TValue>.Create('input_shape', TPythonObject.None ));
 
 
     PyInstance := GetKerasClassIstance('layers.Embedding');
@@ -1767,24 +1777,24 @@ constructor TLocallyConnected1D.Create(filters, kernel_size, strides: Integer; p
 begin
     inherited Create;
 
-    Parameters.Add( TPair<AnsiString,TValue>.Create('filters',filters));
-    Parameters.Add( TPair<AnsiString,TValue>.Create('kernel_size',kernel_size));
-    Parameters.Add( TPair<AnsiString,TValue>.Create('strides',strides));
-    Parameters.Add( TPair<AnsiString,TValue>.Create('padding',padding));
-    Parameters.Add( TPair<AnsiString,TValue>.Create('data_format',data_format));
-    Parameters.Add( TPair<AnsiString,TValue>.Create('dilation_rate',dilation_rate));
-    Parameters.Add( TPair<AnsiString,TValue>.Create('activation',activation));
-    Parameters.Add( TPair<AnsiString,TValue>.Create('use_bias',use_bias));
-    Parameters.Add( TPair<AnsiString,TValue>.Create('kernel_initializer',kernel_initializer));
-    Parameters.Add( TPair<AnsiString,TValue>.Create('bias_initializer',bias_initializer));
-    Parameters.Add( TPair<AnsiString,TValue>.Create('kernel_regularizer',kernel_regularizer));
-    Parameters.Add( TPair<AnsiString,TValue>.Create('bias_regularizer',bias_regularizer));
-    Parameters.Add( TPair<AnsiString,TValue>.Create('activity_regularizer',activity_regularizer));
-    Parameters.Add( TPair<AnsiString,TValue>.Create('kernel_constraint',kernel_constraint));
-    Parameters.Add( TPair<AnsiString,TValue>.Create('bias_constraint',bias_constraint));
+    Parameters.Add( TPair<String,TValue>.Create('filters',filters));
+    Parameters.Add( TPair<String,TValue>.Create('kernel_size',kernel_size));
+    Parameters.Add( TPair<String,TValue>.Create('strides',strides));
+    Parameters.Add( TPair<String,TValue>.Create('padding',padding));
+    Parameters.Add( TPair<String,TValue>.Create('data_format',data_format));
+    Parameters.Add( TPair<String,TValue>.Create('dilation_rate',dilation_rate));
+    Parameters.Add( TPair<String,TValue>.Create('activation',activation));
+    Parameters.Add( TPair<String,TValue>.Create('use_bias',use_bias));
+    Parameters.Add( TPair<String,TValue>.Create('kernel_initializer',kernel_initializer));
+    Parameters.Add( TPair<String,TValue>.Create('bias_initializer',bias_initializer));
+    Parameters.Add( TPair<String,TValue>.Create('kernel_regularizer',kernel_regularizer));
+    Parameters.Add( TPair<String,TValue>.Create('bias_regularizer',bias_regularizer));
+    Parameters.Add( TPair<String,TValue>.Create('activity_regularizer',activity_regularizer));
+    Parameters.Add( TPair<String,TValue>.Create('kernel_constraint',kernel_constraint));
+    Parameters.Add( TPair<String,TValue>.Create('bias_constraint',bias_constraint));
 
-    if input_shape <> nil then Parameters.Add( TPair<AnsiString,TValue>.Create('input_shape',TValue.FromShape(input_shape^)))
-    else                       Parameters.Add( TPair<AnsiString,TValue>.Create('input_shape', TPythonObject.None ));
+    if input_shape <> nil then Parameters.Add( TPair<String,TValue>.Create('input_shape',TValue.FromShape(input_shape^)))
+    else                       Parameters.Add( TPair<String,TValue>.Create('input_shape', TPythonObject.None ));
 
     PyInstance := GetKerasClassIstance('layers.LocallyConnected1D');
     Init;
@@ -1810,24 +1820,24 @@ begin
     else                        drate := TValue.FromShape( Tnp_Shape.Create([ dilation_rate[0], dilation_rate[1] ]) );
 
 
-    Parameters.Add( TPair<AnsiString,TValue>.Create('filters',filters));
-    Parameters.Add( TPair<AnsiString,TValue>.Create('kernel_size',ksize));
-    Parameters.Add( TPair<AnsiString,TValue>.Create('strides',stride));
-    Parameters.Add( TPair<AnsiString,TValue>.Create('padding',padding));
-    Parameters.Add( TPair<AnsiString,TValue>.Create('data_format',data_format));
-    Parameters.Add( TPair<AnsiString,TValue>.Create('dilation_rate',drate));
-    Parameters.Add( TPair<AnsiString,TValue>.Create('activation',activation));
-    Parameters.Add( TPair<AnsiString,TValue>.Create('use_bias',use_bias));
-    Parameters.Add( TPair<AnsiString,TValue>.Create('kernel_initializer',kernel_initializer));
-    Parameters.Add( TPair<AnsiString,TValue>.Create('bias_initializer',bias_initializer));
-    Parameters.Add( TPair<AnsiString,TValue>.Create('kernel_regularizer',kernel_regularizer));
-    Parameters.Add( TPair<AnsiString,TValue>.Create('bias_regularizer',bias_regularizer));
-    Parameters.Add( TPair<AnsiString,TValue>.Create('activity_regularizer',activity_regularizer));
-    Parameters.Add( TPair<AnsiString,TValue>.Create('kernel_constraint',kernel_constraint));
-    Parameters.Add( TPair<AnsiString,TValue>.Create('bias_constraint',bias_constraint));
+    Parameters.Add( TPair<String,TValue>.Create('filters',filters));
+    Parameters.Add( TPair<String,TValue>.Create('kernel_size',ksize));
+    Parameters.Add( TPair<String,TValue>.Create('strides',stride));
+    Parameters.Add( TPair<String,TValue>.Create('padding',padding));
+    Parameters.Add( TPair<String,TValue>.Create('data_format',data_format));
+    Parameters.Add( TPair<String,TValue>.Create('dilation_rate',drate));
+    Parameters.Add( TPair<String,TValue>.Create('activation',activation));
+    Parameters.Add( TPair<String,TValue>.Create('use_bias',use_bias));
+    Parameters.Add( TPair<String,TValue>.Create('kernel_initializer',kernel_initializer));
+    Parameters.Add( TPair<String,TValue>.Create('bias_initializer',bias_initializer));
+    Parameters.Add( TPair<String,TValue>.Create('kernel_regularizer',kernel_regularizer));
+    Parameters.Add( TPair<String,TValue>.Create('bias_regularizer',bias_regularizer));
+    Parameters.Add( TPair<String,TValue>.Create('activity_regularizer',activity_regularizer));
+    Parameters.Add( TPair<String,TValue>.Create('kernel_constraint',kernel_constraint));
+    Parameters.Add( TPair<String,TValue>.Create('bias_constraint',bias_constraint));
 
-    if input_shape <> nil then Parameters.Add( TPair<AnsiString,TValue>.Create('input_shape',TValue.FromShape(input_shape^)))
-    else                       Parameters.Add( TPair<AnsiString,TValue>.Create('input_shape', TPythonObject.None ));
+    if input_shape <> nil then Parameters.Add( TPair<String,TValue>.Create('input_shape',TValue.FromShape(input_shape^)))
+    else                       Parameters.Add( TPair<String,TValue>.Create('input_shape', TPythonObject.None ));
 
     PyInstance := GetKerasClassIstance('layers.LocallyConnected2D');
     Init;
@@ -1846,7 +1856,7 @@ constructor TAdd.Create(inputs: TArray<TBaseLayer>);
 begin
     inherited Create;
 
-    Parameters.Add( TPair<AnsiString,TValue>.Create('inputs', TValue.FromArray<TBaseLayer>(inputs) ));
+    Parameters.Add( TPair<String,TValue>.Create('inputs', TValue.FromArray<TBaseLayer>(inputs) ));
 
     PyInstance := GetKerasClassIstance('layers.add');
     Init;
@@ -1859,7 +1869,7 @@ constructor TConcatenate.Create(inputs: TArray<TBaseLayer>);
 begin
     inherited Create;
 
-    Parameters.Add( TPair<AnsiString,TValue>.Create('inputs', TValue.FromArray<TBaseLayer>(inputs) ));
+    Parameters.Add( TPair<String,TValue>.Create('inputs', TValue.FromArray<TBaseLayer>(inputs) ));
 
     PyInstance := GetKerasClassIstance('layers.concatenate');
     Init;
@@ -1871,7 +1881,7 @@ constructor TGaussianNoise.Create(stddev: Double);
 begin
     inherited Create;
 
-    Parameters.Add( TPair<AnsiString,TValue>.Create('stddev', stddev ));
+    Parameters.Add( TPair<String,TValue>.Create('stddev', stddev ));
 
     PyInstance := GetKerasClassIstance('layers.GaussianNoise');
     Init;
@@ -1883,7 +1893,7 @@ constructor TGaussianDropout.Create(rate: Double);
 begin
     inherited Create;
 
-    Parameters.Add( TPair<AnsiString,TValue>.Create('rate', rate ));
+    Parameters.Add( TPair<String,TValue>.Create('rate', rate ));
 
     PyInstance := GetKerasClassIstance('layers.GaussianDropout');
     Init;
@@ -1895,11 +1905,11 @@ constructor TAlphaDropout.Create(rate: Double; noise_shape: TNDarray<Integer>; s
 begin
     inherited Create;
 
-    Parameters.Add( TPair<AnsiString,TValue>.Create('rate', rate ));
-    Parameters.Add( TPair<AnsiString,TValue>.Create('noise_shape', noise_shape ));
+    Parameters.Add( TPair<String,TValue>.Create('rate', rate ));
+    Parameters.Add( TPair<String,TValue>.Create('noise_shape', noise_shape ));
 
-    if seed <> nil then Parameters.Add( TPair<AnsiString,TValue>.Create('seed',seed^))
-    else                Parameters.Add( TPair<AnsiString,TValue>.Create('seed', TPythonObject.None ));
+    if seed <> nil then Parameters.Add( TPair<String,TValue>.Create('seed',seed^))
+    else                Parameters.Add( TPair<String,TValue>.Create('seed', TPythonObject.None ));
 
     PyInstance := GetKerasClassIstance('layers.AlphaDropout');
     Init;
@@ -1913,22 +1923,22 @@ constructor TBatchNormalization.Create(axis: Integer; momentum, epsilon: Double;
 begin
      inherited Create;
 
-     Parameters.Add( TPair<AnsiString,TValue>.Create('axis', axis ));
-     Parameters.Add( TPair<AnsiString,TValue>.Create('momentum', momentum ));
-     Parameters.Add( TPair<AnsiString,TValue>.Create('epsilon', epsilon ));
-     Parameters.Add( TPair<AnsiString,TValue>.Create('center', center ));
-     Parameters.Add( TPair<AnsiString,TValue>.Create('scale', scale ));
-     Parameters.Add( TPair<AnsiString,TValue>.Create('beta_initializer', beta_initializer ));
-     Parameters.Add( TPair<AnsiString,TValue>.Create('gamma_initializer', gamma_initializer ));
-     Parameters.Add( TPair<AnsiString,TValue>.Create('moving_mean_initializer', moving_mean_initializer ));
-     Parameters.Add( TPair<AnsiString,TValue>.Create('moving_variance_initializer', moving_variance_initializer ));
-     Parameters.Add( TPair<AnsiString,TValue>.Create('beta_regularizer', beta_regularizer ));
-     Parameters.Add( TPair<AnsiString,TValue>.Create('gamma_regularizer', gamma_regularizer ));
-     Parameters.Add( TPair<AnsiString,TValue>.Create('beta_constraint', beta_constraint ));
-     Parameters.Add( TPair<AnsiString,TValue>.Create('gamma_constraint', gamma_constraint));
+     Parameters.Add( TPair<String,TValue>.Create('axis', axis ));
+     Parameters.Add( TPair<String,TValue>.Create('momentum', momentum ));
+     Parameters.Add( TPair<String,TValue>.Create('epsilon', epsilon ));
+     Parameters.Add( TPair<String,TValue>.Create('center', center ));
+     Parameters.Add( TPair<String,TValue>.Create('scale', scale ));
+     Parameters.Add( TPair<String,TValue>.Create('beta_initializer', beta_initializer ));
+     Parameters.Add( TPair<String,TValue>.Create('gamma_initializer', gamma_initializer ));
+     Parameters.Add( TPair<String,TValue>.Create('moving_mean_initializer', moving_mean_initializer ));
+     Parameters.Add( TPair<String,TValue>.Create('moving_variance_initializer', moving_variance_initializer ));
+     Parameters.Add( TPair<String,TValue>.Create('beta_regularizer', beta_regularizer ));
+     Parameters.Add( TPair<String,TValue>.Create('gamma_regularizer', gamma_regularizer ));
+     Parameters.Add( TPair<String,TValue>.Create('beta_constraint', beta_constraint ));
+     Parameters.Add( TPair<String,TValue>.Create('gamma_constraint', gamma_constraint));
 
-     if input_shape <> nil then Parameters.Add( TPair<AnsiString,TValue>.Create('input_shape',TValue.FromShape(input_shape^)))
-     else                       Parameters.Add( TPair<AnsiString,TValue>.Create('input_shape', TPythonObject.None ));
+     if input_shape <> nil then Parameters.Add( TPair<String,TValue>.Create('input_shape',TValue.FromShape(input_shape^)))
+     else                       Parameters.Add( TPair<String,TValue>.Create('input_shape', TPythonObject.None ));
 
      PyInstance := GetKerasClassIstance('layers.BatchNormalization');
      Init;
@@ -1940,13 +1950,13 @@ constructor TMaxPooling1D.Create(pool_size: Integer; strides: PInteger; padding,
 begin
     inherited Create;
 
-    Parameters.Add( TPair<AnsiString,TValue>.Create('pool_size',pool_size));
+    Parameters.Add( TPair<String,TValue>.Create('pool_size',pool_size));
 
-    if strides <> nil then Parameters.Add( TPair<AnsiString,TValue>.Create('strides',strides^))
-    else                   Parameters.Add( TPair<AnsiString,TValue>.Create('strides', TPythonObject.None ));
+    if strides <> nil then Parameters.Add( TPair<String,TValue>.Create('strides',strides^))
+    else                   Parameters.Add( TPair<String,TValue>.Create('strides', TPythonObject.None ));
 
-    Parameters.Add( TPair<AnsiString,TValue>.Create('padding',padding));
-    Parameters.Add( TPair<AnsiString,TValue>.Create('data_format',data_format));
+    Parameters.Add( TPair<String,TValue>.Create('padding',padding));
+    Parameters.Add( TPair<String,TValue>.Create('data_format',data_format));
 
     PyInstance := GetKerasClassIstance('layers.MaxPooling1D');
     Init;
@@ -1965,13 +1975,13 @@ begin
 
     if strides <> nil then stride := TValue.FromArray<Integer>(strides);
 
-    Parameters.Add( TPair<AnsiString,TValue>.Create('pool_size',pool));
+    Parameters.Add( TPair<String,TValue>.Create('pool_size',pool));
 
-    if strides <> nil  then Parameters.Add( TPair<AnsiString,TValue>.Create('strides',stride))
-    else                    Parameters.Add( TPair<AnsiString,TValue>.Create('strides', TPythonObject.None ));
+    if strides <> nil  then Parameters.Add( TPair<String,TValue>.Create('strides',stride))
+    else                    Parameters.Add( TPair<String,TValue>.Create('strides', TPythonObject.None ));
 
-    Parameters.Add( TPair<AnsiString,TValue>.Create('padding',padding));
-    Parameters.Add( TPair<AnsiString,TValue>.Create('data_format',data_format));
+    Parameters.Add( TPair<String,TValue>.Create('padding',padding));
+    Parameters.Add( TPair<String,TValue>.Create('data_format',data_format));
 
     PyInstance := GetKerasClassIstance('layers.MaxPooling2D');
     Init;
@@ -1990,13 +2000,13 @@ begin
 
     if strides <> nil then stride := TValue.FromArray<Integer>(strides);
 
-    Parameters.Add( TPair<AnsiString,TValue>.Create('pool_size',pool));
+    Parameters.Add( TPair<String,TValue>.Create('pool_size',pool));
 
-    if strides <> nil  then Parameters.Add( TPair<AnsiString,TValue>.Create('strides',stride))
-    else                    Parameters.Add( TPair<AnsiString,TValue>.Create('strides', TPythonObject.None ));
+    if strides <> nil  then Parameters.Add( TPair<String,TValue>.Create('strides',stride))
+    else                    Parameters.Add( TPair<String,TValue>.Create('strides', TPythonObject.None ));
 
-    Parameters.Add( TPair<AnsiString,TValue>.Create('padding',padding));
-    Parameters.Add( TPair<AnsiString,TValue>.Create('data_format',data_format));
+    Parameters.Add( TPair<String,TValue>.Create('padding',padding));
+    Parameters.Add( TPair<String,TValue>.Create('data_format',data_format));
 
     PyInstance := GetKerasClassIstance('layers.MaxPooling3D');
     Init;
@@ -2008,13 +2018,13 @@ constructor TAveragePooling1D.Create(pool_size: Integer; strides: PInteger; padd
 begin
     inherited Create;
 
-    Parameters.Add( TPair<AnsiString,TValue>.Create('pool_size',pool_size));
+    Parameters.Add( TPair<String,TValue>.Create('pool_size',pool_size));
 
-    if strides <> nil then Parameters.Add( TPair<AnsiString,TValue>.Create('strides',strides^))
-    else                   Parameters.Add( TPair<AnsiString,TValue>.Create('strides', TPythonObject.None ));
+    if strides <> nil then Parameters.Add( TPair<String,TValue>.Create('strides',strides^))
+    else                   Parameters.Add( TPair<String,TValue>.Create('strides', TPythonObject.None ));
 
-    Parameters.Add( TPair<AnsiString,TValue>.Create('padding',padding));
-    Parameters.Add( TPair<AnsiString,TValue>.Create('data_format',data_format));
+    Parameters.Add( TPair<String,TValue>.Create('padding',padding));
+    Parameters.Add( TPair<String,TValue>.Create('data_format',data_format));
 
     PyInstance := GetKerasClassIstance('layers.AveragePooling1D');
     Init;
@@ -2033,13 +2043,13 @@ begin
 
     if strides <> nil then stride := TValue.FromArray<Integer>(strides);
 
-    Parameters.Add( TPair<AnsiString,TValue>.Create('pool_size',pool));
+    Parameters.Add( TPair<String,TValue>.Create('pool_size',pool));
 
-    if strides <> nil  then Parameters.Add( TPair<AnsiString,TValue>.Create('strides',stride))
-    else                    Parameters.Add( TPair<AnsiString,TValue>.Create('strides', TPythonObject.None ));
+    if strides <> nil  then Parameters.Add( TPair<String,TValue>.Create('strides',stride))
+    else                    Parameters.Add( TPair<String,TValue>.Create('strides', TPythonObject.None ));
 
-    Parameters.Add( TPair<AnsiString,TValue>.Create('padding',padding));
-    Parameters.Add( TPair<AnsiString,TValue>.Create('data_format',data_format));
+    Parameters.Add( TPair<String,TValue>.Create('padding',padding));
+    Parameters.Add( TPair<String,TValue>.Create('data_format',data_format));
 
     PyInstance := GetKerasClassIstance('layers.AveragePooling2D');
     Init;
@@ -2059,13 +2069,13 @@ begin
 
     if strides <> nil then stride := TValue.FromArray<Integer>(strides);
 
-    Parameters.Add( TPair<AnsiString,TValue>.Create('pool_size',pool));
+    Parameters.Add( TPair<String,TValue>.Create('pool_size',pool));
 
-    if strides <> nil  then Parameters.Add( TPair<AnsiString,TValue>.Create('strides',stride))
-    else                    Parameters.Add( TPair<AnsiString,TValue>.Create('strides', TPythonObject.None ));
+    if strides <> nil  then Parameters.Add( TPair<String,TValue>.Create('strides',stride))
+    else                    Parameters.Add( TPair<String,TValue>.Create('strides', TPythonObject.None ));
 
-    Parameters.Add( TPair<AnsiString,TValue>.Create('padding',padding));
-    Parameters.Add( TPair<AnsiString,TValue>.Create('data_format',data_format));
+    Parameters.Add( TPair<String,TValue>.Create('padding',padding));
+    Parameters.Add( TPair<String,TValue>.Create('data_format',data_format));
 
     PyInstance := GetKerasClassIstance('layers.AveragePooling3D');
     Init;
@@ -2077,7 +2087,7 @@ constructor TGlobalMaxPooling1D.Create(data_format: string);
 begin
     inherited Create;
 
-    Parameters.Add( TPair<AnsiString,TValue>.Create('data_format',data_format));
+    Parameters.Add( TPair<String,TValue>.Create('data_format',data_format));
 
     PyInstance := GetKerasClassIstance('layers.GlobalMaxPooling1D');
     Init;
@@ -2089,7 +2099,7 @@ constructor TGlobalMaxPooling2D.Create(data_format: string);
 begin
     inherited Create;
 
-    Parameters.Add( TPair<AnsiString,TValue>.Create('data_format',data_format));
+    Parameters.Add( TPair<String,TValue>.Create('data_format',data_format));
 
     PyInstance := GetKerasClassIstance('layers.GlobalMaxPooling2D');
     Init;
@@ -2101,7 +2111,7 @@ constructor TGlobalMaxPooling3D.Create(data_format: string);
 begin
     inherited Create;
 
-    Parameters.Add( TPair<AnsiString,TValue>.Create('data_format',data_format));
+    Parameters.Add( TPair<String,TValue>.Create('data_format',data_format));
 
     PyInstance := GetKerasClassIstance('layers.GlobalMaxPooling3D');
     Init;
@@ -2113,7 +2123,7 @@ constructor TGlobalAveragePooling1D.Create(data_format: string);
 begin
     inherited Create;
 
-    Parameters.Add( TPair<AnsiString,TValue>.Create('data_format',data_format));
+    Parameters.Add( TPair<String,TValue>.Create('data_format',data_format));
 
     PyInstance := GetKerasClassIstance('layers.GlobalAveragePooling1D');
     Init;
@@ -2125,7 +2135,7 @@ constructor TGlobalAveragePooling2D.Create(data_format: string);
 begin
     inherited Create;
 
-    Parameters.Add( TPair<AnsiString,TValue>.Create('data_format',data_format));
+    Parameters.Add( TPair<String,TValue>.Create('data_format',data_format));
 
     PyInstance := GetKerasClassIstance('layers.GlobalAveragePooling2D');
     Init;
@@ -2137,7 +2147,7 @@ constructor TGlobalAveragePooling3D.Create(data_format: string);
 begin
     inherited Create;
 
-    Parameters.Add( TPair<AnsiString,TValue>.Create('data_format',data_format));
+    Parameters.Add( TPair<String,TValue>.Create('data_format',data_format));
 
     PyInstance := GetKerasClassIstance('layers.GlobalAveragePooling3D');
     Init;
@@ -2149,7 +2159,7 @@ constructor TTimeDistributed.Create(layer: TBaseLayer);
 begin
     inherited Create;
 
-    Parameters.Add( TPair<AnsiString,TValue>.Create('layer',layer.PyInstance));
+    Parameters.Add( TPair<String,TValue>.Create('layer',layer.PyInstance));
 
     PyInstance := GetKerasClassIstance('layers.TimeDistributed');
     Init;
@@ -2161,9 +2171,9 @@ constructor TBidirectional.Create(layer: TBaseLayer; merge_mode: string; weights
 begin
     inherited Create;
 
-    Parameters.Add( TPair<AnsiString,TValue>.Create('layer',layer.PyInstance));
-    Parameters.Add( TPair<AnsiString,TValue>.Create('merge_mode',merge_mode));
-    Parameters.Add( TPair<AnsiString,TValue>.Create('weights',weights));
+    Parameters.Add( TPair<String,TValue>.Create('layer',layer.PyInstance));
+    Parameters.Add( TPair<String,TValue>.Create('merge_mode',merge_mode));
+    Parameters.Add( TPair<String,TValue>.Create('weights',weights));
 
     PyInstance := GetKerasClassIstance('layers.Bidirectional');
     Init;
@@ -2174,20 +2184,20 @@ end;
 constructor TRNN.Create(cell: TRNN; return_sequences, return_state, go_backwards, stateful, unroll: Boolean; input_dim,
                                input_length: PInteger; input_shape: PTnp_Shape);
 begin
-    Parameters := TList< TPair<AnsiString,TValue> >.Create;
+    Parameters := TList< TPair<String,TValue> >.Create;
 
-    Parameters.Add( TPair<AnsiString,TValue>.Create('cell',cell.PyInstance));
-    Parameters.Add( TPair<AnsiString,TValue>.Create('return_sequences',return_sequences));
-    Parameters.Add( TPair<AnsiString,TValue>.Create('return_state',return_state));
-    Parameters.Add( TPair<AnsiString,TValue>.Create('go_backwards',go_backwards));
-    Parameters.Add( TPair<AnsiString,TValue>.Create('stateful',stateful));
-    Parameters.Add( TPair<AnsiString,TValue>.Create('unroll',unroll));
+    Parameters.Add( TPair<String,TValue>.Create('cell',cell.PyInstance));
+    Parameters.Add( TPair<String,TValue>.Create('return_sequences',return_sequences));
+    Parameters.Add( TPair<String,TValue>.Create('return_state',return_state));
+    Parameters.Add( TPair<String,TValue>.Create('go_backwards',go_backwards));
+    Parameters.Add( TPair<String,TValue>.Create('stateful',stateful));
+    Parameters.Add( TPair<String,TValue>.Create('unroll',unroll));
 
-    if input_length <> nil then Parameters.Add( TPair<AnsiString,TValue>.Create('input_length',input_length^))
-    else                        Parameters.Add( TPair<AnsiString,TValue>.Create('input_length', TPythonObject.None ));
+    if input_length <> nil then Parameters.Add( TPair<String,TValue>.Create('input_length',input_length^))
+    else                        Parameters.Add( TPair<String,TValue>.Create('input_length', TPythonObject.None ));
 
-    if input_shape <> nil then Parameters.Add( TPair<AnsiString,TValue>.Create('input_shape',TValue.FromShape(input_shape^)))
-    else                       Parameters.Add( TPair<AnsiString,TValue>.Create('input_shape', TPythonObject.None ));
+    if input_shape <> nil then Parameters.Add( TPair<String,TValue>.Create('input_shape',TValue.FromShape(input_shape^)))
+    else                       Parameters.Add( TPair<String,TValue>.Create('input_shape', TPythonObject.None ));
 
     PyInstance := GetKerasClassIstance('layers.RNN');
     Init;
@@ -2200,28 +2210,28 @@ constructor TSimpleRNN.Create(units: Integer; activation: string; use_bias: Bool
                                 activity_regularizer, kernel_constraint, recurrent_constraint, bias_constraint: string; dropout,
                                 recurrent_dropout: Double; return_sequences, return_state, go_backwards, stateful, unroll: Boolean);
 begin
-    Parameters := TList< TPair<AnsiString,TValue> >.Create;
+    Parameters := TList< TPair<String,TValue> >.Create;
 
-    Parameters.Add( TPair<AnsiString,TValue>.Create('units',units));
-    Parameters.Add( TPair<AnsiString,TValue>.Create('activation',activation));
-    Parameters.Add( TPair<AnsiString,TValue>.Create('use_bias',use_bias));
-    Parameters.Add( TPair<AnsiString,TValue>.Create('kernel_initializer',kernel_initializer));
-    Parameters.Add( TPair<AnsiString,TValue>.Create('recurrent_initializer',recurrent_initializer));
-    Parameters.Add( TPair<AnsiString,TValue>.Create('bias_initializer',bias_initializer));
-    Parameters.Add( TPair<AnsiString,TValue>.Create('kernel_regularizer',kernel_regularizer));
-    Parameters.Add( TPair<AnsiString,TValue>.Create('recurrent_regularizer',recurrent_regularizer));
-    Parameters.Add( TPair<AnsiString,TValue>.Create('bias_regularizer',bias_regularizer));
-    Parameters.Add( TPair<AnsiString,TValue>.Create('activity_regularizer',activity_regularizer));
-    Parameters.Add( TPair<AnsiString,TValue>.Create('kernel_constraint',kernel_constraint));
-    Parameters.Add( TPair<AnsiString,TValue>.Create('recurrent_constraint',recurrent_constraint));
-    Parameters.Add( TPair<AnsiString,TValue>.Create('bias_constraint',bias_constraint));
-    Parameters.Add( TPair<AnsiString,TValue>.Create('dropout',dropout));
-    Parameters.Add( TPair<AnsiString,TValue>.Create('recurrent_dropout',recurrent_dropout));
-    Parameters.Add( TPair<AnsiString,TValue>.Create('return_sequences',return_sequences));
-    Parameters.Add( TPair<AnsiString,TValue>.Create('return_state',return_state));
-    Parameters.Add( TPair<AnsiString,TValue>.Create('go_backwards',go_backwards));
-    Parameters.Add( TPair<AnsiString,TValue>.Create('stateful',stateful));
-    Parameters.Add( TPair<AnsiString,TValue>.Create('unroll',unroll));
+    Parameters.Add( TPair<String,TValue>.Create('units',units));
+    Parameters.Add( TPair<String,TValue>.Create('activation',activation));
+    Parameters.Add( TPair<String,TValue>.Create('use_bias',use_bias));
+    Parameters.Add( TPair<String,TValue>.Create('kernel_initializer',kernel_initializer));
+    Parameters.Add( TPair<String,TValue>.Create('recurrent_initializer',recurrent_initializer));
+    Parameters.Add( TPair<String,TValue>.Create('bias_initializer',bias_initializer));
+    Parameters.Add( TPair<String,TValue>.Create('kernel_regularizer',kernel_regularizer));
+    Parameters.Add( TPair<String,TValue>.Create('recurrent_regularizer',recurrent_regularizer));
+    Parameters.Add( TPair<String,TValue>.Create('bias_regularizer',bias_regularizer));
+    Parameters.Add( TPair<String,TValue>.Create('activity_regularizer',activity_regularizer));
+    Parameters.Add( TPair<String,TValue>.Create('kernel_constraint',kernel_constraint));
+    Parameters.Add( TPair<String,TValue>.Create('recurrent_constraint',recurrent_constraint));
+    Parameters.Add( TPair<String,TValue>.Create('bias_constraint',bias_constraint));
+    Parameters.Add( TPair<String,TValue>.Create('dropout',dropout));
+    Parameters.Add( TPair<String,TValue>.Create('recurrent_dropout',recurrent_dropout));
+    Parameters.Add( TPair<String,TValue>.Create('return_sequences',return_sequences));
+    Parameters.Add( TPair<String,TValue>.Create('return_state',return_state));
+    Parameters.Add( TPair<String,TValue>.Create('go_backwards',go_backwards));
+    Parameters.Add( TPair<String,TValue>.Create('stateful',stateful));
+    Parameters.Add( TPair<String,TValue>.Create('unroll',unroll));
 
     PyInstance := GetKerasClassIstance('layers.SimpleRNN');
     Init;
@@ -2234,23 +2244,23 @@ constructor TSimpleRNNCell.Create(units: Integer; activation: string; use_bias: 
                                 activity_regularizer, kernel_constraint, recurrent_constraint, bias_constraint: string; dropout,
                                 recurrent_dropout: Double);
 begin
-    Parameters := TList< TPair<AnsiString,TValue> >.Create;
+    Parameters := TList< TPair<String,TValue> >.Create;
 
-    Parameters.Add( TPair<AnsiString,TValue>.Create('units',units));
-    Parameters.Add( TPair<AnsiString,TValue>.Create('activation',activation));
-    Parameters.Add( TPair<AnsiString,TValue>.Create('use_bias',use_bias));
-    Parameters.Add( TPair<AnsiString,TValue>.Create('kernel_initializer',kernel_initializer));
-    Parameters.Add( TPair<AnsiString,TValue>.Create('recurrent_initializer',recurrent_initializer));
-    Parameters.Add( TPair<AnsiString,TValue>.Create('bias_initializer',bias_initializer));
-    Parameters.Add( TPair<AnsiString,TValue>.Create('kernel_regularizer',kernel_regularizer));
-    Parameters.Add( TPair<AnsiString,TValue>.Create('recurrent_regularizer',recurrent_regularizer));
-    Parameters.Add( TPair<AnsiString,TValue>.Create('bias_regularizer',bias_regularizer));
-    Parameters.Add( TPair<AnsiString,TValue>.Create('activity_regularizer',activity_regularizer));
-    Parameters.Add( TPair<AnsiString,TValue>.Create('kernel_constraint',kernel_constraint));
-    Parameters.Add( TPair<AnsiString,TValue>.Create('recurrent_constraint',recurrent_constraint));
-    Parameters.Add( TPair<AnsiString,TValue>.Create('bias_constraint',bias_constraint));
-    Parameters.Add( TPair<AnsiString,TValue>.Create('dropout',dropout));
-    Parameters.Add( TPair<AnsiString,TValue>.Create('recurrent_dropout',recurrent_dropout));
+    Parameters.Add( TPair<String,TValue>.Create('units',units));
+    Parameters.Add( TPair<String,TValue>.Create('activation',activation));
+    Parameters.Add( TPair<String,TValue>.Create('use_bias',use_bias));
+    Parameters.Add( TPair<String,TValue>.Create('kernel_initializer',kernel_initializer));
+    Parameters.Add( TPair<String,TValue>.Create('recurrent_initializer',recurrent_initializer));
+    Parameters.Add( TPair<String,TValue>.Create('bias_initializer',bias_initializer));
+    Parameters.Add( TPair<String,TValue>.Create('kernel_regularizer',kernel_regularizer));
+    Parameters.Add( TPair<String,TValue>.Create('recurrent_regularizer',recurrent_regularizer));
+    Parameters.Add( TPair<String,TValue>.Create('bias_regularizer',bias_regularizer));
+    Parameters.Add( TPair<String,TValue>.Create('activity_regularizer',activity_regularizer));
+    Parameters.Add( TPair<String,TValue>.Create('kernel_constraint',kernel_constraint));
+    Parameters.Add( TPair<String,TValue>.Create('recurrent_constraint',recurrent_constraint));
+    Parameters.Add( TPair<String,TValue>.Create('bias_constraint',bias_constraint));
+    Parameters.Add( TPair<String,TValue>.Create('dropout',dropout));
+    Parameters.Add( TPair<String,TValue>.Create('recurrent_dropout',recurrent_dropout));
 
     PyInstance := GetKerasClassIstance('layers.SimpleRNNCell');
     Init;
@@ -2264,31 +2274,31 @@ constructor TGRU.Create(units: Integer; activation,recurrent_activation: string;
                     recurrent_dropout: Double; implement: Integer; return_sequences, return_state, go_backwards, stateful, unroll,
                     reset_after: Boolean);
 begin
-    Parameters := TList< TPair<AnsiString,TValue> >.Create;
+    Parameters := TList< TPair<String,TValue> >.Create;
 
-    Parameters.Add( TPair<AnsiString,TValue>.Create('units',units));
-    Parameters.Add( TPair<AnsiString,TValue>.Create('activation',activation));
-    Parameters.Add( TPair<AnsiString,TValue>.Create('recurrent_activation',recurrent_activation));
-    Parameters.Add( TPair<AnsiString,TValue>.Create('use_bias',use_bias));
-    Parameters.Add( TPair<AnsiString,TValue>.Create('kernel_initializer',kernel_initializer));
-    Parameters.Add( TPair<AnsiString,TValue>.Create('recurrent_initializer',recurrent_initializer));
-    Parameters.Add( TPair<AnsiString,TValue>.Create('bias_initializer',bias_initializer));
-    Parameters.Add( TPair<AnsiString,TValue>.Create('kernel_regularizer',kernel_regularizer));
-    Parameters.Add( TPair<AnsiString,TValue>.Create('recurrent_regularizer',recurrent_regularizer));
-    Parameters.Add( TPair<AnsiString,TValue>.Create('bias_regularizer',bias_regularizer));
-    Parameters.Add( TPair<AnsiString,TValue>.Create('activity_regularizer',activity_regularizer));
-    Parameters.Add( TPair<AnsiString,TValue>.Create('kernel_constraint',kernel_constraint));
-    Parameters.Add( TPair<AnsiString,TValue>.Create('recurrent_constraint',recurrent_constraint));
-    Parameters.Add( TPair<AnsiString,TValue>.Create('bias_constraint',bias_constraint));
-    Parameters.Add( TPair<AnsiString,TValue>.Create('dropout',dropout));
-    Parameters.Add( TPair<AnsiString,TValue>.Create('recurrent_dropout',recurrent_dropout));
-    Parameters.Add( TPair<AnsiString,TValue>.Create('implementation',implement));
-    Parameters.Add( TPair<AnsiString,TValue>.Create('return_sequences',return_sequences));
-    Parameters.Add( TPair<AnsiString,TValue>.Create('return_state',return_state));
-    Parameters.Add( TPair<AnsiString,TValue>.Create('go_backwards',go_backwards));
-    Parameters.Add( TPair<AnsiString,TValue>.Create('stateful',stateful));
-    Parameters.Add( TPair<AnsiString,TValue>.Create('unroll',unroll));
-    Parameters.Add( TPair<AnsiString,TValue>.Create('reset_after',reset_after));
+    Parameters.Add( TPair<String,TValue>.Create('units',units));
+    Parameters.Add( TPair<String,TValue>.Create('activation',activation));
+    Parameters.Add( TPair<String,TValue>.Create('recurrent_activation',recurrent_activation));
+    Parameters.Add( TPair<String,TValue>.Create('use_bias',use_bias));
+    Parameters.Add( TPair<String,TValue>.Create('kernel_initializer',kernel_initializer));
+    Parameters.Add( TPair<String,TValue>.Create('recurrent_initializer',recurrent_initializer));
+    Parameters.Add( TPair<String,TValue>.Create('bias_initializer',bias_initializer));
+    Parameters.Add( TPair<String,TValue>.Create('kernel_regularizer',kernel_regularizer));
+    Parameters.Add( TPair<String,TValue>.Create('recurrent_regularizer',recurrent_regularizer));
+    Parameters.Add( TPair<String,TValue>.Create('bias_regularizer',bias_regularizer));
+    Parameters.Add( TPair<String,TValue>.Create('activity_regularizer',activity_regularizer));
+    Parameters.Add( TPair<String,TValue>.Create('kernel_constraint',kernel_constraint));
+    Parameters.Add( TPair<String,TValue>.Create('recurrent_constraint',recurrent_constraint));
+    Parameters.Add( TPair<String,TValue>.Create('bias_constraint',bias_constraint));
+    Parameters.Add( TPair<String,TValue>.Create('dropout',dropout));
+    Parameters.Add( TPair<String,TValue>.Create('recurrent_dropout',recurrent_dropout));
+    Parameters.Add( TPair<String,TValue>.Create('implementation',implement));
+    Parameters.Add( TPair<String,TValue>.Create('return_sequences',return_sequences));
+    Parameters.Add( TPair<String,TValue>.Create('return_state',return_state));
+    Parameters.Add( TPair<String,TValue>.Create('go_backwards',go_backwards));
+    Parameters.Add( TPair<String,TValue>.Create('stateful',stateful));
+    Parameters.Add( TPair<String,TValue>.Create('unroll',unroll));
+    Parameters.Add( TPair<String,TValue>.Create('reset_after',reset_after));
 
     PyInstance := GetKerasClassIstance('layers.GRU');
     Init;
@@ -2300,22 +2310,22 @@ constructor TCuDNNGRU.Create(units: Integer; kernel_initializer, recurrent_initi
                           kernel_regularizer, recurrent_regularizer, bias_regularizer, activity_regularizer, kernel_constraint,
                           recurrent_constraint, bias_constraint: string; return_sequences, return_state, stateful: Boolean);
 begin
-    Parameters := TList< TPair<AnsiString,TValue> >.Create;
+    Parameters := TList< TPair<String,TValue> >.Create;
 
-    Parameters.Add( TPair<AnsiString,TValue>.Create('units',units));
-    Parameters.Add( TPair<AnsiString,TValue>.Create('kernel_initializer',kernel_initializer));
-    Parameters.Add( TPair<AnsiString,TValue>.Create('recurrent_initializer',recurrent_initializer));
-    Parameters.Add( TPair<AnsiString,TValue>.Create('bias_initializer',bias_initializer));
-    Parameters.Add( TPair<AnsiString,TValue>.Create('kernel_regularizer',kernel_regularizer));
-    Parameters.Add( TPair<AnsiString,TValue>.Create('recurrent_regularizer',recurrent_regularizer));
-    Parameters.Add( TPair<AnsiString,TValue>.Create('bias_regularizer',bias_regularizer));
-    Parameters.Add( TPair<AnsiString,TValue>.Create('activity_regularizer',activity_regularizer));
-    Parameters.Add( TPair<AnsiString,TValue>.Create('kernel_constraint',kernel_constraint));
-    Parameters.Add( TPair<AnsiString,TValue>.Create('recurrent_constraint',recurrent_constraint));
-    Parameters.Add( TPair<AnsiString,TValue>.Create('bias_constraint',bias_constraint));
-    Parameters.Add( TPair<AnsiString,TValue>.Create('return_sequences',return_sequences));
-    Parameters.Add( TPair<AnsiString,TValue>.Create('return_state',return_state));
-    Parameters.Add( TPair<AnsiString,TValue>.Create('stateful',stateful));
+    Parameters.Add( TPair<String,TValue>.Create('units',units));
+    Parameters.Add( TPair<String,TValue>.Create('kernel_initializer',kernel_initializer));
+    Parameters.Add( TPair<String,TValue>.Create('recurrent_initializer',recurrent_initializer));
+    Parameters.Add( TPair<String,TValue>.Create('bias_initializer',bias_initializer));
+    Parameters.Add( TPair<String,TValue>.Create('kernel_regularizer',kernel_regularizer));
+    Parameters.Add( TPair<String,TValue>.Create('recurrent_regularizer',recurrent_regularizer));
+    Parameters.Add( TPair<String,TValue>.Create('bias_regularizer',bias_regularizer));
+    Parameters.Add( TPair<String,TValue>.Create('activity_regularizer',activity_regularizer));
+    Parameters.Add( TPair<String,TValue>.Create('kernel_constraint',kernel_constraint));
+    Parameters.Add( TPair<String,TValue>.Create('recurrent_constraint',recurrent_constraint));
+    Parameters.Add( TPair<String,TValue>.Create('bias_constraint',bias_constraint));
+    Parameters.Add( TPair<String,TValue>.Create('return_sequences',return_sequences));
+    Parameters.Add( TPair<String,TValue>.Create('return_state',return_state));
+    Parameters.Add( TPair<String,TValue>.Create('stateful',stateful));
 
     PyInstance := GetKerasClassIstance('layers.CuDNNGRU');
     Init;
@@ -2329,25 +2339,25 @@ constructor TGRUCell.Create(units: Integer; activation, recurrent_activation: st
                       bias_regularizer, kernel_constraint, recurrent_constraint, bias_constraint: string; dropout,
                       recurrent_dropout: Double; implement: Integer; reset_after: Boolean);
 begin
-    Parameters := TList< TPair<AnsiString,TValue> >.Create;
+    Parameters := TList< TPair<String,TValue> >.Create;
 
-    Parameters.Add( TPair<AnsiString,TValue>.Create('units',units));
-    Parameters.Add( TPair<AnsiString,TValue>.Create('activation',activation));
-    Parameters.Add( TPair<AnsiString,TValue>.Create('recurrent_activation',recurrent_activation));
-    Parameters.Add( TPair<AnsiString,TValue>.Create('use_bias',use_bias));
-    Parameters.Add( TPair<AnsiString,TValue>.Create('kernel_initializer',kernel_initializer));
-    Parameters.Add( TPair<AnsiString,TValue>.Create('recurrent_initializer',recurrent_initializer));
-    Parameters.Add( TPair<AnsiString,TValue>.Create('bias_initializer',bias_initializer));
-    Parameters.Add( TPair<AnsiString,TValue>.Create('kernel_regularizer',kernel_regularizer));
-    Parameters.Add( TPair<AnsiString,TValue>.Create('recurrent_regularizer',recurrent_regularizer));
-    Parameters.Add( TPair<AnsiString,TValue>.Create('bias_regularizer',bias_regularizer));
-    Parameters.Add( TPair<AnsiString,TValue>.Create('kernel_constraint',kernel_constraint));
-    Parameters.Add( TPair<AnsiString,TValue>.Create('recurrent_constraint',recurrent_constraint));
-    Parameters.Add( TPair<AnsiString,TValue>.Create('bias_constraint',bias_constraint));
-    Parameters.Add( TPair<AnsiString,TValue>.Create('dropout',dropout));
-    Parameters.Add( TPair<AnsiString,TValue>.Create('recurrent_dropout',recurrent_dropout));
-    Parameters.Add( TPair<AnsiString,TValue>.Create('implementation',implement));
-    Parameters.Add( TPair<AnsiString,TValue>.Create('reset_after',reset_after));
+    Parameters.Add( TPair<String,TValue>.Create('units',units));
+    Parameters.Add( TPair<String,TValue>.Create('activation',activation));
+    Parameters.Add( TPair<String,TValue>.Create('recurrent_activation',recurrent_activation));
+    Parameters.Add( TPair<String,TValue>.Create('use_bias',use_bias));
+    Parameters.Add( TPair<String,TValue>.Create('kernel_initializer',kernel_initializer));
+    Parameters.Add( TPair<String,TValue>.Create('recurrent_initializer',recurrent_initializer));
+    Parameters.Add( TPair<String,TValue>.Create('bias_initializer',bias_initializer));
+    Parameters.Add( TPair<String,TValue>.Create('kernel_regularizer',kernel_regularizer));
+    Parameters.Add( TPair<String,TValue>.Create('recurrent_regularizer',recurrent_regularizer));
+    Parameters.Add( TPair<String,TValue>.Create('bias_regularizer',bias_regularizer));
+    Parameters.Add( TPair<String,TValue>.Create('kernel_constraint',kernel_constraint));
+    Parameters.Add( TPair<String,TValue>.Create('recurrent_constraint',recurrent_constraint));
+    Parameters.Add( TPair<String,TValue>.Create('bias_constraint',bias_constraint));
+    Parameters.Add( TPair<String,TValue>.Create('dropout',dropout));
+    Parameters.Add( TPair<String,TValue>.Create('recurrent_dropout',recurrent_dropout));
+    Parameters.Add( TPair<String,TValue>.Create('implementation',implement));
+    Parameters.Add( TPair<String,TValue>.Create('reset_after',reset_after));
 
     PyInstance := GetKerasClassIstance('layers.GRUCell');
     Init;
@@ -2361,31 +2371,31 @@ constructor TLSTM.Create(units: Integer; activation, recurrent_activation: strin
                             bias_constraint: string; dropout, recurrent_dropout: Double; implement: Integer; return_sequences, return_state,
                             go_backwards, stateful, unroll: Boolean);
 begin
-    Parameters := TList< TPair<AnsiString,TValue> >.Create;
+    Parameters := TList< TPair<String,TValue> >.Create;
 
-    Parameters.Add( TPair<AnsiString,TValue>.Create('units',units));
-    Parameters.Add( TPair<AnsiString,TValue>.Create('activation',activation));
-    Parameters.Add( TPair<AnsiString,TValue>.Create('recurrent_activation',recurrent_activation));
-    Parameters.Add( TPair<AnsiString,TValue>.Create('use_bias',use_bias));
-    Parameters.Add( TPair<AnsiString,TValue>.Create('kernel_initializer',kernel_initializer));
-    Parameters.Add( TPair<AnsiString,TValue>.Create('recurrent_initializer',recurrent_initializer));
-    Parameters.Add( TPair<AnsiString,TValue>.Create('bias_initializer',bias_initializer));
-    Parameters.Add( TPair<AnsiString,TValue>.Create('unit_forget_bias',unit_forget_bias));
-    Parameters.Add( TPair<AnsiString,TValue>.Create('kernel_regularizer',kernel_regularizer));
-    Parameters.Add( TPair<AnsiString,TValue>.Create('recurrent_regularizer',recurrent_regularizer));
-    Parameters.Add( TPair<AnsiString,TValue>.Create('bias_regularizer',bias_regularizer));
-    Parameters.Add( TPair<AnsiString,TValue>.Create('activity_regularizer',activity_regularizer));
-    Parameters.Add( TPair<AnsiString,TValue>.Create('kernel_constraint',kernel_constraint));
-    Parameters.Add( TPair<AnsiString,TValue>.Create('recurrent_constraint',recurrent_constraint));
-    Parameters.Add( TPair<AnsiString,TValue>.Create('bias_constraint',bias_constraint));
-    Parameters.Add( TPair<AnsiString,TValue>.Create('dropout',dropout));
-    Parameters.Add( TPair<AnsiString,TValue>.Create('recurrent_dropout',recurrent_dropout));
-    Parameters.Add( TPair<AnsiString,TValue>.Create('implementation',implement));
-    Parameters.Add( TPair<AnsiString,TValue>.Create('return_sequences',return_sequences));
-    Parameters.Add( TPair<AnsiString,TValue>.Create('return_state',return_state));
-    Parameters.Add( TPair<AnsiString,TValue>.Create('go_backwards',go_backwards));
-    Parameters.Add( TPair<AnsiString,TValue>.Create('stateful',stateful));
-    Parameters.Add( TPair<AnsiString,TValue>.Create('unroll',unroll));
+    Parameters.Add( TPair<String,TValue>.Create('units',units));
+    Parameters.Add( TPair<String,TValue>.Create('activation',activation));
+    Parameters.Add( TPair<String,TValue>.Create('recurrent_activation',recurrent_activation));
+    Parameters.Add( TPair<String,TValue>.Create('use_bias',use_bias));
+    Parameters.Add( TPair<String,TValue>.Create('kernel_initializer',kernel_initializer));
+    Parameters.Add( TPair<String,TValue>.Create('recurrent_initializer',recurrent_initializer));
+    Parameters.Add( TPair<String,TValue>.Create('bias_initializer',bias_initializer));
+    Parameters.Add( TPair<String,TValue>.Create('unit_forget_bias',unit_forget_bias));
+    Parameters.Add( TPair<String,TValue>.Create('kernel_regularizer',kernel_regularizer));
+    Parameters.Add( TPair<String,TValue>.Create('recurrent_regularizer',recurrent_regularizer));
+    Parameters.Add( TPair<String,TValue>.Create('bias_regularizer',bias_regularizer));
+    Parameters.Add( TPair<String,TValue>.Create('activity_regularizer',activity_regularizer));
+    Parameters.Add( TPair<String,TValue>.Create('kernel_constraint',kernel_constraint));
+    Parameters.Add( TPair<String,TValue>.Create('recurrent_constraint',recurrent_constraint));
+    Parameters.Add( TPair<String,TValue>.Create('bias_constraint',bias_constraint));
+    Parameters.Add( TPair<String,TValue>.Create('dropout',dropout));
+    Parameters.Add( TPair<String,TValue>.Create('recurrent_dropout',recurrent_dropout));
+    Parameters.Add( TPair<String,TValue>.Create('implementation',implement));
+    Parameters.Add( TPair<String,TValue>.Create('return_sequences',return_sequences));
+    Parameters.Add( TPair<String,TValue>.Create('return_state',return_state));
+    Parameters.Add( TPair<String,TValue>.Create('go_backwards',go_backwards));
+    Parameters.Add( TPair<String,TValue>.Create('stateful',stateful));
+    Parameters.Add( TPair<String,TValue>.Create('unroll',unroll));
 
     PyInstance := GetKerasClassIstance('layers.LSTM');
     Init;
@@ -2397,23 +2407,23 @@ constructor TCuDNNLSTM.Create(units: Integer; kernel_initializer, recurrent_init
                       unit_forget_bias: Boolean; kernel_regularizer, recurrent_regularizer, bias_regularizer, activity_regularizer,
                       kernel_constraint, recurrent_constraint, bias_constraint: string; return_sequences, return_state, stateful: Boolean);
 begin
-    Parameters := TList< TPair<AnsiString,TValue> >.Create;
+    Parameters := TList< TPair<String,TValue> >.Create;
 
-    Parameters.Add( TPair<AnsiString,TValue>.Create('units',units));
-    Parameters.Add( TPair<AnsiString,TValue>.Create('kernel_initializer',kernel_initializer));
-    Parameters.Add( TPair<AnsiString,TValue>.Create('recurrent_initializer',recurrent_initializer));
-    Parameters.Add( TPair<AnsiString,TValue>.Create('bias_initializer',bias_initializer));
-    Parameters.Add( TPair<AnsiString,TValue>.Create('unit_forget_bias',unit_forget_bias));
-    Parameters.Add( TPair<AnsiString,TValue>.Create('kernel_regularizer',kernel_regularizer));
-    Parameters.Add( TPair<AnsiString,TValue>.Create('recurrent_regularizer',recurrent_regularizer));
-    Parameters.Add( TPair<AnsiString,TValue>.Create('bias_regularizer',bias_regularizer));
-    Parameters.Add( TPair<AnsiString,TValue>.Create('activity_regularizer',activity_regularizer));
-    Parameters.Add( TPair<AnsiString,TValue>.Create('kernel_constraint',kernel_constraint));
-    Parameters.Add( TPair<AnsiString,TValue>.Create('recurrent_constraint',recurrent_constraint));
-    Parameters.Add( TPair<AnsiString,TValue>.Create('bias_constraint',bias_constraint));
-    Parameters.Add( TPair<AnsiString,TValue>.Create('return_sequences',return_sequences));
-    Parameters.Add( TPair<AnsiString,TValue>.Create('return_state',return_state));
-    Parameters.Add( TPair<AnsiString,TValue>.Create('stateful',stateful));
+    Parameters.Add( TPair<String,TValue>.Create('units',units));
+    Parameters.Add( TPair<String,TValue>.Create('kernel_initializer',kernel_initializer));
+    Parameters.Add( TPair<String,TValue>.Create('recurrent_initializer',recurrent_initializer));
+    Parameters.Add( TPair<String,TValue>.Create('bias_initializer',bias_initializer));
+    Parameters.Add( TPair<String,TValue>.Create('unit_forget_bias',unit_forget_bias));
+    Parameters.Add( TPair<String,TValue>.Create('kernel_regularizer',kernel_regularizer));
+    Parameters.Add( TPair<String,TValue>.Create('recurrent_regularizer',recurrent_regularizer));
+    Parameters.Add( TPair<String,TValue>.Create('bias_regularizer',bias_regularizer));
+    Parameters.Add( TPair<String,TValue>.Create('activity_regularizer',activity_regularizer));
+    Parameters.Add( TPair<String,TValue>.Create('kernel_constraint',kernel_constraint));
+    Parameters.Add( TPair<String,TValue>.Create('recurrent_constraint',recurrent_constraint));
+    Parameters.Add( TPair<String,TValue>.Create('bias_constraint',bias_constraint));
+    Parameters.Add( TPair<String,TValue>.Create('return_sequences',return_sequences));
+    Parameters.Add( TPair<String,TValue>.Create('return_state',return_state));
+    Parameters.Add( TPair<String,TValue>.Create('stateful',stateful));
 
     PyInstance := GetKerasClassIstance('layers.CuDNNLSTM');
     Init;
@@ -2426,25 +2436,25 @@ constructor TLSTMCell.Create(units: Integer; activation, recurrent_activation: s
                               recurrent_regularizer, bias_regularizer, kernel_constraint, recurrent_constraint, bias_constraint: string; dropout,
                               recurrent_dropout: Double; implement: Integer);
 begin
-    Parameters := TList< TPair<AnsiString,TValue> >.Create;
+    Parameters := TList< TPair<String,TValue> >.Create;
 
-    Parameters.Add( TPair<AnsiString,TValue>.Create('units',units));
-    Parameters.Add( TPair<AnsiString,TValue>.Create('activation',activation));
-    Parameters.Add( TPair<AnsiString,TValue>.Create('recurrent_activation',recurrent_activation));
-    Parameters.Add( TPair<AnsiString,TValue>.Create('use_bias',use_bias));
-    Parameters.Add( TPair<AnsiString,TValue>.Create('kernel_initializer',kernel_initializer));
-    Parameters.Add( TPair<AnsiString,TValue>.Create('recurrent_initializer',recurrent_initializer));
-    Parameters.Add( TPair<AnsiString,TValue>.Create('bias_initializer',bias_initializer));
-    Parameters.Add( TPair<AnsiString,TValue>.Create('unit_forget_bias',unit_forget_bias));
-    Parameters.Add( TPair<AnsiString,TValue>.Create('kernel_regularizer',kernel_regularizer));
-    Parameters.Add( TPair<AnsiString,TValue>.Create('recurrent_regularizer',recurrent_regularizer));
-    Parameters.Add( TPair<AnsiString,TValue>.Create('bias_regularizer',bias_regularizer));
-    Parameters.Add( TPair<AnsiString,TValue>.Create('kernel_constraint',kernel_constraint));
-    Parameters.Add( TPair<AnsiString,TValue>.Create('recurrent_constraint',recurrent_constraint));
-    Parameters.Add( TPair<AnsiString,TValue>.Create('bias_constraint',bias_constraint));
-    Parameters.Add( TPair<AnsiString,TValue>.Create('dropout',dropout));
-    Parameters.Add( TPair<AnsiString,TValue>.Create('recurrent_dropout',recurrent_dropout));
-    Parameters.Add( TPair<AnsiString,TValue>.Create('implementation',implement));
+    Parameters.Add( TPair<String,TValue>.Create('units',units));
+    Parameters.Add( TPair<String,TValue>.Create('activation',activation));
+    Parameters.Add( TPair<String,TValue>.Create('recurrent_activation',recurrent_activation));
+    Parameters.Add( TPair<String,TValue>.Create('use_bias',use_bias));
+    Parameters.Add( TPair<String,TValue>.Create('kernel_initializer',kernel_initializer));
+    Parameters.Add( TPair<String,TValue>.Create('recurrent_initializer',recurrent_initializer));
+    Parameters.Add( TPair<String,TValue>.Create('bias_initializer',bias_initializer));
+    Parameters.Add( TPair<String,TValue>.Create('unit_forget_bias',unit_forget_bias));
+    Parameters.Add( TPair<String,TValue>.Create('kernel_regularizer',kernel_regularizer));
+    Parameters.Add( TPair<String,TValue>.Create('recurrent_regularizer',recurrent_regularizer));
+    Parameters.Add( TPair<String,TValue>.Create('bias_regularizer',bias_regularizer));
+    Parameters.Add( TPair<String,TValue>.Create('kernel_constraint',kernel_constraint));
+    Parameters.Add( TPair<String,TValue>.Create('recurrent_constraint',recurrent_constraint));
+    Parameters.Add( TPair<String,TValue>.Create('bias_constraint',bias_constraint));
+    Parameters.Add( TPair<String,TValue>.Create('dropout',dropout));
+    Parameters.Add( TPair<String,TValue>.Create('recurrent_dropout',recurrent_dropout));
+    Parameters.Add( TPair<String,TValue>.Create('implementation',implement));
 
     PyInstance := GetKerasClassIstance('layers.LSTMCell');
     Init;
@@ -2460,7 +2470,7 @@ constructor TConvLSTM2D.Create(filters: Integer; kernel_size, strides: TArray<In
 var
   ksize, stride,drate : TValue;
 begin
-    Parameters := TList< TPair<AnsiString,TValue> >.Create;
+    Parameters := TList< TPair<String,TValue> >.Create;
 
     ksize := TValue.FromShape( Tnp_Shape.Create([ kernel_size[0], kernel_size[1] ]) );
 
@@ -2470,34 +2480,34 @@ begin
     if dilation_rate = nil then drate := TValue.FromShape( Tnp_Shape.Create([1, 1]) )
     else                        drate := TValue.FromShape( Tnp_Shape.Create([ dilation_rate[0], dilation_rate[1] ]) );
 
-    Parameters.Add( TPair<AnsiString,TValue>.Create('filters',filters));
-    Parameters.Add( TPair<AnsiString,TValue>.Create('kernel_size',ksize));
-    Parameters.Add( TPair<AnsiString,TValue>.Create('strides',stride));
-    Parameters.Add( TPair<AnsiString,TValue>.Create('padding',padding));
-    Parameters.Add( TPair<AnsiString,TValue>.Create('data_format',data_format));
-    Parameters.Add( TPair<AnsiString,TValue>.Create('dilation_rate',drate));
-    Parameters.Add( TPair<AnsiString,TValue>.Create('activation',activation));
-    Parameters.Add( TPair<AnsiString,TValue>.Create('recurrent_activation',recurrent_activation));
-    Parameters.Add( TPair<AnsiString,TValue>.Create('use_bias',use_bias));
-    Parameters.Add( TPair<AnsiString,TValue>.Create('kernel_initializer',kernel_initializer));
-    Parameters.Add( TPair<AnsiString,TValue>.Create('recurrent_initializer',recurrent_initializer));
-    Parameters.Add( TPair<AnsiString,TValue>.Create('bias_initializer',bias_initializer));
-    Parameters.Add( TPair<AnsiString,TValue>.Create('unit_forget_bias',unit_forget_bias));
-    Parameters.Add( TPair<AnsiString,TValue>.Create('kernel_regularizer',kernel_regularizer));
-    Parameters.Add( TPair<AnsiString,TValue>.Create('recurrent_regularizer',recurrent_regularizer));
-    Parameters.Add( TPair<AnsiString,TValue>.Create('bias_regularizer',bias_regularizer));
-    Parameters.Add( TPair<AnsiString,TValue>.Create('activity_regularizer',activity_regularizer));
-    Parameters.Add( TPair<AnsiString,TValue>.Create('kernel_constraint',kernel_constraint));
-    Parameters.Add( TPair<AnsiString,TValue>.Create('recurrent_constraint',recurrent_constraint));
-    Parameters.Add( TPair<AnsiString,TValue>.Create('bias_constraint',bias_constraint));
-    Parameters.Add( TPair<AnsiString,TValue>.Create('return_sequences',return_sequences));
-    Parameters.Add( TPair<AnsiString,TValue>.Create('go_backwards',go_backwards));
-    Parameters.Add( TPair<AnsiString,TValue>.Create('stateful',stateful));
-    Parameters.Add( TPair<AnsiString,TValue>.Create('dropout',dropout));
-    Parameters.Add( TPair<AnsiString,TValue>.Create('recurrent_dropout',recurrent_dropout));
+    Parameters.Add( TPair<String,TValue>.Create('filters',filters));
+    Parameters.Add( TPair<String,TValue>.Create('kernel_size',ksize));
+    Parameters.Add( TPair<String,TValue>.Create('strides',stride));
+    Parameters.Add( TPair<String,TValue>.Create('padding',padding));
+    Parameters.Add( TPair<String,TValue>.Create('data_format',data_format));
+    Parameters.Add( TPair<String,TValue>.Create('dilation_rate',drate));
+    Parameters.Add( TPair<String,TValue>.Create('activation',activation));
+    Parameters.Add( TPair<String,TValue>.Create('recurrent_activation',recurrent_activation));
+    Parameters.Add( TPair<String,TValue>.Create('use_bias',use_bias));
+    Parameters.Add( TPair<String,TValue>.Create('kernel_initializer',kernel_initializer));
+    Parameters.Add( TPair<String,TValue>.Create('recurrent_initializer',recurrent_initializer));
+    Parameters.Add( TPair<String,TValue>.Create('bias_initializer',bias_initializer));
+    Parameters.Add( TPair<String,TValue>.Create('unit_forget_bias',unit_forget_bias));
+    Parameters.Add( TPair<String,TValue>.Create('kernel_regularizer',kernel_regularizer));
+    Parameters.Add( TPair<String,TValue>.Create('recurrent_regularizer',recurrent_regularizer));
+    Parameters.Add( TPair<String,TValue>.Create('bias_regularizer',bias_regularizer));
+    Parameters.Add( TPair<String,TValue>.Create('activity_regularizer',activity_regularizer));
+    Parameters.Add( TPair<String,TValue>.Create('kernel_constraint',kernel_constraint));
+    Parameters.Add( TPair<String,TValue>.Create('recurrent_constraint',recurrent_constraint));
+    Parameters.Add( TPair<String,TValue>.Create('bias_constraint',bias_constraint));
+    Parameters.Add( TPair<String,TValue>.Create('return_sequences',return_sequences));
+    Parameters.Add( TPair<String,TValue>.Create('go_backwards',go_backwards));
+    Parameters.Add( TPair<String,TValue>.Create('stateful',stateful));
+    Parameters.Add( TPair<String,TValue>.Create('dropout',dropout));
+    Parameters.Add( TPair<String,TValue>.Create('recurrent_dropout',recurrent_dropout));
 
-    if input_shape <> nil then Parameters.Add( TPair<AnsiString,TValue>.Create('input_shape',TValue.FromShape(input_shape^)))
-    else                       Parameters.Add( TPair<AnsiString,TValue>.Create('input_shape', TPythonObject.None ));
+    if input_shape <> nil then Parameters.Add( TPair<String,TValue>.Create('input_shape',TValue.FromShape(input_shape^)))
+    else                       Parameters.Add( TPair<String,TValue>.Create('input_shape', TPythonObject.None ));
 
     PyInstance := GetKerasClassIstance('layers.ConvLSTM2D');
     Init;
@@ -2513,7 +2523,7 @@ constructor TConvLSTM2DCell.Create(filters: Integer; kernel_size, strides: TArra
 var
   ksize, stride,drate : TValue;
 begin
-    Parameters := TList< TPair<AnsiString,TValue> >.Create;
+    Parameters := TList< TPair<String,TValue> >.Create;
 
     ksize := TValue.FromShape( Tnp_Shape.Create([ kernel_size[0], kernel_size[1] ]) );
 
@@ -2523,27 +2533,27 @@ begin
     if dilation_rate = nil then drate := TValue.FromShape( Tnp_Shape.Create([1, 1]) )
     else                        drate := TValue.FromShape( Tnp_Shape.Create([ dilation_rate[0], dilation_rate[1] ]) );
 
-    Parameters.Add( TPair<AnsiString,TValue>.Create('filters',filters));
-    Parameters.Add( TPair<AnsiString,TValue>.Create('kernel_size',ksize));
-    Parameters.Add( TPair<AnsiString,TValue>.Create('strides',stride));
-    Parameters.Add( TPair<AnsiString,TValue>.Create('padding',padding));
-    Parameters.Add( TPair<AnsiString,TValue>.Create('data_format',data_format));
-    Parameters.Add( TPair<AnsiString,TValue>.Create('dilation_rate',drate));
-    Parameters.Add( TPair<AnsiString,TValue>.Create('activation',activation));
-    Parameters.Add( TPair<AnsiString,TValue>.Create('recurrent_activation',recurrent_activation));
-    Parameters.Add( TPair<AnsiString,TValue>.Create('use_bias',use_bias));
-    Parameters.Add( TPair<AnsiString,TValue>.Create('kernel_initializer',kernel_initializer));
-    Parameters.Add( TPair<AnsiString,TValue>.Create('recurrent_initializer',recurrent_initializer));
-    Parameters.Add( TPair<AnsiString,TValue>.Create('bias_initializer',bias_initializer));
-    Parameters.Add( TPair<AnsiString,TValue>.Create('unit_forget_bias',unit_forget_bias));
-    Parameters.Add( TPair<AnsiString,TValue>.Create('kernel_regularizer',kernel_regularizer));
-    Parameters.Add( TPair<AnsiString,TValue>.Create('recurrent_regularizer',recurrent_regularizer));
-    Parameters.Add( TPair<AnsiString,TValue>.Create('bias_regularizer',bias_regularizer));
-    Parameters.Add( TPair<AnsiString,TValue>.Create('kernel_constraint',kernel_constraint));
-    Parameters.Add( TPair<AnsiString,TValue>.Create('recurrent_constraint',recurrent_constraint));
-    Parameters.Add( TPair<AnsiString,TValue>.Create('bias_constraint',bias_constraint));
-    Parameters.Add( TPair<AnsiString,TValue>.Create('dropout',dropout));
-    Parameters.Add( TPair<AnsiString,TValue>.Create('recurrent_dropout',recurrent_dropout));
+    Parameters.Add( TPair<String,TValue>.Create('filters',filters));
+    Parameters.Add( TPair<String,TValue>.Create('kernel_size',ksize));
+    Parameters.Add( TPair<String,TValue>.Create('strides',stride));
+    Parameters.Add( TPair<String,TValue>.Create('padding',padding));
+    Parameters.Add( TPair<String,TValue>.Create('data_format',data_format));
+    Parameters.Add( TPair<String,TValue>.Create('dilation_rate',drate));
+    Parameters.Add( TPair<String,TValue>.Create('activation',activation));
+    Parameters.Add( TPair<String,TValue>.Create('recurrent_activation',recurrent_activation));
+    Parameters.Add( TPair<String,TValue>.Create('use_bias',use_bias));
+    Parameters.Add( TPair<String,TValue>.Create('kernel_initializer',kernel_initializer));
+    Parameters.Add( TPair<String,TValue>.Create('recurrent_initializer',recurrent_initializer));
+    Parameters.Add( TPair<String,TValue>.Create('bias_initializer',bias_initializer));
+    Parameters.Add( TPair<String,TValue>.Create('unit_forget_bias',unit_forget_bias));
+    Parameters.Add( TPair<String,TValue>.Create('kernel_regularizer',kernel_regularizer));
+    Parameters.Add( TPair<String,TValue>.Create('recurrent_regularizer',recurrent_regularizer));
+    Parameters.Add( TPair<String,TValue>.Create('bias_regularizer',bias_regularizer));
+    Parameters.Add( TPair<String,TValue>.Create('kernel_constraint',kernel_constraint));
+    Parameters.Add( TPair<String,TValue>.Create('recurrent_constraint',recurrent_constraint));
+    Parameters.Add( TPair<String,TValue>.Create('bias_constraint',bias_constraint));
+    Parameters.Add( TPair<String,TValue>.Create('dropout',dropout));
+    Parameters.Add( TPair<String,TValue>.Create('recurrent_dropout',recurrent_dropout));
 
     PyInstance := GetKerasClassIstance('layers.ConvLSTM2DCell');
     Init;

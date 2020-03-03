@@ -39,13 +39,13 @@ type
 
     public
        PyInstance : TPythonObject;
-       Parameters : TList< TPair<AnsiString,TValue> >;
+       Parameters : TList< TPair<String,TValue> >;
 
        constructor Create;
        destructor  Destroy; override;
 
-       function  InvokeMethod(                                   method: string; args: TList< TPair<AnsiString,TValue> >): TPythonObject;
-       class function  InvokeStaticMethod(caller: TPythonObject; method: string; args: TList< TPair<AnsiString,TValue> >): TPythonObject;
+       function  InvokeMethod(                                   method: string; args: TList< TPair<String,TValue> >): TPythonObject;
+       class function  InvokeStaticMethod(caller: TPythonObject; method: string; args: TList< TPair<String,TValue> >): TPythonObject;
        procedure Init;
 
        class function  GetKerasClassIstance(nameClass: AnsiString): TPythonObject;
@@ -297,7 +297,7 @@ type
      public
        caller : TPythonObject;
        constructor Create;
-       function load_data(path: string = 'boston_housing.npz'; test_split: double = 0.2; seed : Integer = 113): TArray<TNDArray>;
+       class function load_data(path: string = 'boston_housing.npz'; test_split: double = 0.2; seed : Integer = 113): TArray<TNDArray>;
   end;
 
   TCifar10 = class(TBase)
@@ -332,15 +332,15 @@ type
      public
        caller : TPythonObject;
        constructor Create;
-       function GetWordIndex(path: string= 'imdb_word_index.json'): TDictionary<string, Integer>;
-       function load_data(path      : string= 'imdb.npz';
-                          num_words : PInteger= nil;
-                          skip_top  : Integer= 0;
-                          maxlen    : PInteger= nil;
-                          seed      : Integer= 113;
-                          start_char: Integer= 1;
-                          oov_char  : Integer= 2;
-                          index_from: Integer= 3): TArray<TNDArray>;
+       class function GetWordIndex(path: string= 'imdb_word_index.json'): TDictionary<string, Integer>;
+       class function load_data(path      : string= 'imdb.npz';
+                                num_words : PInteger= nil;
+                                skip_top  : Integer= 0;
+                                maxlen    : PInteger= nil;
+                                seed      : Integer= 113;
+                                start_char: Integer= 1;
+                                oov_char  : Integer= 2;
+                                index_from: Integer= 3): TArray<TNDArray>;
   end;
 
   TReuters = class(TBase)
@@ -452,11 +452,9 @@ type
                           send_as_json : Boolean = false);
   end;
 
-  TFunSchedule = function (EpochIdx: Integer): Double;
-
   TLearningRateScheduler = class(TCallback)
      public
-       constructor Create(schedule:TFunSchedule; verbose: Integer= 0);
+       constructor Create(schedule:PyCFunction; verbose: Integer= 0);
   end;
 
   TTensorBoard = class(TCallback)
@@ -512,10 +510,27 @@ type
        function  Cast(x: TPythonObject; dtype: string = 'float32'): TPythonObject;
   end;
 
-  function ImportModule(Name: string): PPyObject;
+  function  ImportModule(Name: string): PPyObject;
+  procedure CreatePyFunc(AModule: TPythonModule; AMethodDef: PPyMethodDef);
 
 implementation
-    uses System.IOUtils, np.Api,np.Base, utils ;
+    uses System.IOUtils,MethodCallBack, np.Api,np.Base, utils ;
+
+procedure CreatePyFunc(AModule: TPythonModule; AMethodDef: PPyMethodDef);
+var
+  d : PPyObject;
+begin
+  if Assigned(AModule) and AModule.Initialized then
+    with GetPythonEngine do
+    begin
+      d := PyModule_GetDict(AModule.Module);
+      Assert(Assigned(d));
+      if IsPython3000 then
+        PyDict_SetItemString( d, AMethodDef^.ml_name, PyCFunction_NewEx(AMethodDef, nil, nil))
+      else
+        PyDict_SetItemString( d, AMethodDef^.ml_name, PyCFunction_New(AMethodDef, nil));
+    end;
+end;
 
 function ImportModule(Name: string): PPyObject;
 var
@@ -587,7 +602,7 @@ begin
 
         if (data.ParentInfo^.Name = 'TPythonObject') or (data.ParentInfo^.Name = 'TNDArray') or (data.ParentInfo^.Name = 'TPySequence')then
            Result := value.AsType<TPythonObject>
-        else if (data.ParentInfo^.Name = 'TBase') or (data.ParentInfo^.Name = 'TBaseLayer')  then
+        else if (data.ParentInfo^.Name = 'TBase') or (data.ParentInfo^.Name = 'TBaseLayer')  or (data.ParentInfo^.Name = 'TCallback') then
            Result := value.AsType<TBase>.PyInstance
         // TList<System.string>
         else if Info.Name = 'TList<System.string>' then
@@ -746,7 +761,7 @@ constructor TBase.Create;
 begin
     inherited Create;
 
-    Parameters := TList< TPair<AnsiString,TValue> >.Create;
+    Parameters := TList< TPair<String,TValue> >.Create;
 
 end;
 
@@ -839,7 +854,7 @@ end;
 
 procedure TBase.SetItem(name: string; const Value: TValue);
 begin
-    Parameters.Add( TPair<AnsiString,TValue>.Create(name,value) );
+    Parameters.Add( TPair<String,TValue>.Create(name,value) );
 end;
 
 procedure TBase.Init;
@@ -852,7 +867,7 @@ var
    pyargs : TPyTuple;
    kwargs : TPyDict;
    skip   : Boolean;
-   item   : TPair<AnsiString,TValue>;
+   item   : TPair<String,TValue>;
 begin
 
   if Parameters.Count > 0 then pyargs := ToTuple([Parameters.First.Value])
@@ -881,12 +896,12 @@ begin
 
 end;
 
-class function TBase.InvokeStaticMethod(caller : TPythonObject; method: string; args: TList< TPair<AnsiString,TValue> >): TPythonObject;
+class function TBase.InvokeStaticMethod(caller : TPythonObject; method: string; args: TList< TPair<String,TValue> >): TPythonObject;
 var
    pyargs : TPyTuple;
    kwargs : TPyDict;
    skip   : Boolean;
-   item   : TPair<AnsiString,TValue>;
+   item   : TPair<String,TValue>;
 begin
 
   if args.Count > 0 then pyargs := ToTuple([args.First.Value])
@@ -915,12 +930,12 @@ begin
 
 end;
 
-function TBase.InvokeMethod(method: string; args: TList< TPair<AnsiString,TValue> >): TPythonObject;
+function TBase.InvokeMethod(method: string; args: TList< TPair<String,TValue> >): TPythonObject;
 var
    pyargs : TPyTuple;
    kwargs : TPyDict;
    skip   : Boolean;
-   item   : TPair<AnsiString,TValue>;
+   item   : TPair<String,TValue>;
 begin
 
   if args.Count > 0 then pyargs := ToTuple([args.First.Value])
@@ -1109,7 +1124,7 @@ constructor TConstant.Create(value : Double = 0.0);
 begin
     inherited Create;
 
-    Parameters.Add( TPair<AnsiString,TValue>.Create('value',value) );
+    Parameters.Add( TPair<String,TValue>.Create('value',value) );
 
     PyInstance := GetKerasClassIstance('initializers.Constant');
     init();
@@ -1121,11 +1136,11 @@ constructor TRandomNormal.Create(mean, stddev: Double; seed: PInteger);
 begin
     inherited Create;
 
-    Parameters.Add( TPair<AnsiString,TValue>.Create('mean',mean) );
-    Parameters.Add( TPair<AnsiString,TValue>.Create('stddev',stddev) );
+    Parameters.Add( TPair<String,TValue>.Create('mean',mean) );
+    Parameters.Add( TPair<String,TValue>.Create('stddev',stddev) );
 
     if seed <> nil then
-        Parameters.Add( TPair<AnsiString,TValue>.Create('seed',seed^) );
+        Parameters.Add( TPair<String,TValue>.Create('seed',seed^) );
 
     PyInstance := GetKerasClassIstance('initializers.RandomNormal');
     init();
@@ -1137,11 +1152,11 @@ constructor TRandomUniform.Create(minval, maxval: Double; seed: PInteger);
 begin
     inherited Create;
 
-    Parameters.Add( TPair<AnsiString,TValue>.Create('minval',minval) );
-    Parameters.Add( TPair<AnsiString,TValue>.Create('maxval',maxval) );
+    Parameters.Add( TPair<String,TValue>.Create('minval',minval) );
+    Parameters.Add( TPair<String,TValue>.Create('maxval',maxval) );
 
     if seed <> nil then
-        Parameters.Add( TPair<AnsiString,TValue>.Create('seed',seed^) );
+        Parameters.Add( TPair<String,TValue>.Create('seed',seed^) );
 
     PyInstance := GetKerasClassIstance('initializers.RandomUniform');
     init();
@@ -1153,11 +1168,11 @@ constructor TTruncatedNormal.Create(mean, stddev: Double; seed: PInteger);
 begin
     inherited Create;
 
-    Parameters.Add( TPair<AnsiString,TValue>.Create('mean',mean) );
-    Parameters.Add( TPair<AnsiString,TValue>.Create('stddev',stddev) );
+    Parameters.Add( TPair<String,TValue>.Create('mean',mean) );
+    Parameters.Add( TPair<String,TValue>.Create('stddev',stddev) );
 
     if seed <> nil then
-        Parameters.Add( TPair<AnsiString,TValue>.Create('seed',seed^) );
+        Parameters.Add( TPair<String,TValue>.Create('seed',seed^) );
 
     PyInstance := GetKerasClassIstance('initializers.TruncatedNormal');
     init();
@@ -1169,12 +1184,12 @@ constructor TVarianceScaling.Create(scale: Double; mode, distribution: string; s
 begin
     inherited Create;
 
-    Parameters.Add( TPair<AnsiString,TValue>.Create('scale',scale) );
-    Parameters.Add( TPair<AnsiString,TValue>.Create('mode',mode) );
-    Parameters.Add( TPair<AnsiString,TValue>.Create('distribution',distribution) );
+    Parameters.Add( TPair<String,TValue>.Create('scale',scale) );
+    Parameters.Add( TPair<String,TValue>.Create('mode',mode) );
+    Parameters.Add( TPair<String,TValue>.Create('distribution',distribution) );
 
     if seed <> nil then
-        Parameters.Add( TPair<AnsiString,TValue>.Create('seed',seed^) );
+        Parameters.Add( TPair<String,TValue>.Create('seed',seed^) );
 
     PyInstance := GetKerasClassIstance('initializers.VarianceScaling');
     init();
@@ -1186,10 +1201,10 @@ constructor TOrthogonal.Create(gain: Double; seed: PInteger);
 begin
     inherited Create;
 
-    Parameters.Add( TPair<AnsiString,TValue>.Create('gain',gain) );
+    Parameters.Add( TPair<String,TValue>.Create('gain',gain) );
 
     if seed <> nil then
-        Parameters.Add( TPair<AnsiString,TValue>.Create('seed',seed^) );
+        Parameters.Add( TPair<String,TValue>.Create('seed',seed^) );
 
     PyInstance := GetKerasClassIstance('initializers.Orthogonal');
     init();
@@ -1201,7 +1216,7 @@ constructor TIdentity.Create(gain: Double);
 begin
     inherited Create;
 
-    Parameters.Add( TPair<AnsiString,TValue>.Create('gain',gain) );
+    Parameters.Add( TPair<String,TValue>.Create('gain',gain) );
 
     PyInstance := GetKerasClassIstance('initializers.Identity');
     init();
@@ -1214,7 +1229,7 @@ begin
     inherited Create;
 
     if seed <> nil then
-        Parameters.Add( TPair<AnsiString,TValue>.Create('seed',seed^) );
+        Parameters.Add( TPair<String,TValue>.Create('seed',seed^) );
 
     PyInstance := GetKerasClassIstance('initializers.lecun_uniform');
     init();
@@ -1227,7 +1242,7 @@ begin
     inherited Create;
 
     if seed <> nil then
-        Parameters.Add( TPair<AnsiString,TValue>.Create('seed',seed^) );
+        Parameters.Add( TPair<String,TValue>.Create('seed',seed^) );
 
     PyInstance := GetKerasClassIstance('initializers.glorot_normal');
     init();
@@ -1240,7 +1255,7 @@ begin
     inherited Create;
 
     if seed <> nil then
-        Parameters.Add( TPair<AnsiString,TValue>.Create('seed',seed^) );
+        Parameters.Add( TPair<String,TValue>.Create('seed',seed^) );
 
     PyInstance := GetKerasClassIstance('initializers.glorot_uniform');
     init();
@@ -1253,7 +1268,7 @@ begin
     inherited Create;
 
     if seed <> nil then
-        Parameters.Add( TPair<AnsiString,TValue>.Create('seed',seed^) );
+        Parameters.Add( TPair<String,TValue>.Create('seed',seed^) );
 
     PyInstance := GetKerasClassIstance('initializers.he_uniform');
     init();
@@ -1266,7 +1281,7 @@ begin
     inherited Create;
 
     if seed <> nil then
-        Parameters.Add( TPair<AnsiString,TValue>.Create('seed',seed^) );
+        Parameters.Add( TPair<String,TValue>.Create('seed',seed^) );
 
     PyInstance := GetKerasClassIstance('initializers.he_normal');
     init();
@@ -1279,7 +1294,7 @@ begin
     inherited Create;
 
     if seed <> nil then
-        Parameters.Add( TPair<AnsiString,TValue>.Create('seed',seed^) );
+        Parameters.Add( TPair<String,TValue>.Create('seed',seed^) );
 
     PyInstance := GetKerasClassIstance('initializers.lecun_normal');
     init();
@@ -1291,8 +1306,8 @@ constructor TL1L2.Create(l1, l2: Double);
 begin
     inherited Create;
 
-    Parameters.Add( TPair<AnsiString,TValue>.Create('l1',l1) );
-    Parameters.Add( TPair<AnsiString,TValue>.Create('l2',l2) );
+    Parameters.Add( TPair<String,TValue>.Create('l1',l1) );
+    Parameters.Add( TPair<String,TValue>.Create('l2',l2) );
 
     PyInstance := GetKerasClassIstance('regularizers.L1L2');
     init();
@@ -1304,7 +1319,7 @@ constructor TL1.Create(l1: Double);
 begin
     inherited Create;
 
-    Parameters.Add( TPair<AnsiString,TValue>.Create('l1',l1) );
+    Parameters.Add( TPair<String,TValue>.Create('l1',l1) );
 
     PyInstance := GetKerasClassIstance('regularizers.L1');
     init();
@@ -1316,7 +1331,7 @@ constructor TL2.Create(l2: Double);
 begin
     inherited Create;
 
-    Parameters.Add( TPair<AnsiString,TValue>.Create('l2',l2) );
+    Parameters.Add( TPair<String,TValue>.Create('l2',l2) );
 
     PyInstance := GetKerasClassIstance('regularizers.L2');
     init();
@@ -1328,10 +1343,10 @@ constructor TSGD.Create(lr, momentum, decay: Double; nesterov: Boolean);
 begin
     inherited Create;
 
-    Parameters.Add( TPair<AnsiString,TValue>.Create('lr',lr) );
-    Parameters.Add( TPair<AnsiString,TValue>.Create('momentum',momentum) );
-    Parameters.Add( TPair<AnsiString,TValue>.Create('decay',decay) );
-    Parameters.Add( TPair<AnsiString,TValue>.Create('nesterov',nesterov) );
+    Parameters.Add( TPair<String,TValue>.Create('lr',lr) );
+    Parameters.Add( TPair<String,TValue>.Create('momentum',momentum) );
+    Parameters.Add( TPair<String,TValue>.Create('decay',decay) );
+    Parameters.Add( TPair<String,TValue>.Create('nesterov',nesterov) );
 
     PyInstance := GetKerasClassIstance('optimizers.SGD');
     init();
@@ -1343,13 +1358,13 @@ constructor TRMSprop.Create(lr, rho: Double; epsilon: PDouble; decay: Double);
 begin
     inherited Create;
 
-    Parameters.Add( TPair<AnsiString,TValue>.Create('lr',lr) );
-    Parameters.Add( TPair<AnsiString,TValue>.Create('rho',rho) );
+    Parameters.Add( TPair<String,TValue>.Create('lr',lr) );
+    Parameters.Add( TPair<String,TValue>.Create('rho',rho) );
 
     if epsilon <> nil then
-      Parameters.Add( TPair<AnsiString,TValue>.Create('epsilon',epsilon^) );
+      Parameters.Add( TPair<String,TValue>.Create('epsilon',epsilon^) );
 
-    Parameters.Add( TPair<AnsiString,TValue>.Create('decay',decay) );
+    Parameters.Add( TPair<String,TValue>.Create('decay',decay) );
 
     PyInstance := GetKerasClassIstance('optimizers.RMSprop');
     init();
@@ -1361,12 +1376,12 @@ constructor TAdagrad.Create(lr: Double; epsilon: PDouble; decay: Double);
 begin
     inherited Create;
 
-    Parameters.Add( TPair<AnsiString,TValue>.Create('lr',lr) );
+    Parameters.Add( TPair<String,TValue>.Create('lr',lr) );
 
     if epsilon <> nil then
-      Parameters.Add( TPair<AnsiString,TValue>.Create('epsilon',epsilon^) );
+      Parameters.Add( TPair<String,TValue>.Create('epsilon',epsilon^) );
 
-    Parameters.Add( TPair<AnsiString,TValue>.Create('decay',decay) );
+    Parameters.Add( TPair<String,TValue>.Create('decay',decay) );
 
     PyInstance := GetKerasClassIstance('optimizers.Adagrad');
     init();
@@ -1378,13 +1393,13 @@ constructor TAdadelta.Create(lr, rho: Double; epsilon: PDouble; decay: Double);
 begin
     inherited Create;
 
-    Parameters.Add( TPair<AnsiString,TValue>.Create('lr',lr) );
-    Parameters.Add( TPair<AnsiString,TValue>.Create('rho',rho) );
+    Parameters.Add( TPair<String,TValue>.Create('lr',lr) );
+    Parameters.Add( TPair<String,TValue>.Create('rho',rho) );
 
     if epsilon <> nil then
-      Parameters.Add( TPair<AnsiString,TValue>.Create('epsilon',epsilon^) );
+      Parameters.Add( TPair<String,TValue>.Create('epsilon',epsilon^) );
 
-    Parameters.Add( TPair<AnsiString,TValue>.Create('decay',decay) );
+    Parameters.Add( TPair<String,TValue>.Create('decay',decay) );
 
     PyInstance := GetKerasClassIstance('optimizers.Adadelta');
     init();
@@ -1396,15 +1411,15 @@ constructor TAdam.Create(lr, beta_1, beta_2: Double; epsilon: PDouble; decay: do
 begin
     inherited Create;
 
-    Parameters.Add( TPair<AnsiString,TValue>.Create('lr',lr) );
-    Parameters.Add( TPair<AnsiString,TValue>.Create('beta_1',beta_1) );
-    Parameters.Add( TPair<AnsiString,TValue>.Create('beta_2',beta_2) );
+    Parameters.Add( TPair<String,TValue>.Create('lr',lr) );
+    Parameters.Add( TPair<String,TValue>.Create('beta_1',beta_1) );
+    Parameters.Add( TPair<String,TValue>.Create('beta_2',beta_2) );
 
-    if epsilon <> nil then Parameters.Add( TPair<AnsiString,TValue>.Create('epsilon',epsilon^) )
-    else                   Parameters.Add( TPair<AnsiString,TValue>.Create('epsilon', TPythonObject.None ));
+    if epsilon <> nil then Parameters.Add( TPair<String,TValue>.Create('epsilon',epsilon^) )
+    else                   Parameters.Add( TPair<String,TValue>.Create('epsilon', TPythonObject.None ));
 
-    Parameters.Add( TPair<AnsiString,TValue>.Create('decay',decay) );
-    Parameters.Add( TPair<AnsiString,TValue>.Create('amsgrad',amsgrad) );
+    Parameters.Add( TPair<String,TValue>.Create('decay',decay) );
+    Parameters.Add( TPair<String,TValue>.Create('amsgrad',amsgrad) );
 
     PyInstance := GetKerasClassIstance('optimizers.Adam');
     init();
@@ -1416,14 +1431,14 @@ constructor TAdamax.Create(lr, beta_1, beta_2: Double; epsilon: PDouble; decay: 
 begin
     inherited Create;
 
-    Parameters.Add( TPair<AnsiString,TValue>.Create('lr',lr) );
-    Parameters.Add( TPair<AnsiString,TValue>.Create('beta_1',beta_1) );
-    Parameters.Add( TPair<AnsiString,TValue>.Create('beta_2',beta_2) );
+    Parameters.Add( TPair<String,TValue>.Create('lr',lr) );
+    Parameters.Add( TPair<String,TValue>.Create('beta_1',beta_1) );
+    Parameters.Add( TPair<String,TValue>.Create('beta_2',beta_2) );
 
     if epsilon <> nil then
-      Parameters.Add( TPair<AnsiString,TValue>.Create('epsilon',epsilon^) );
+      Parameters.Add( TPair<String,TValue>.Create('epsilon',epsilon^) );
 
-    Parameters.Add( TPair<AnsiString,TValue>.Create('decay',decay) );
+    Parameters.Add( TPair<String,TValue>.Create('decay',decay) );
 
     PyInstance := GetKerasClassIstance('optimizers.Adamax');
     init();
@@ -1435,14 +1450,14 @@ constructor TNadam.Create(lr, beta_1, beta_2: Double; epsilon: PDouble; schedule
 begin
     inherited Create;
 
-    Parameters.Add( TPair<AnsiString,TValue>.Create('lr',lr) );
-    Parameters.Add( TPair<AnsiString,TValue>.Create('beta_1',beta_1) );
-    Parameters.Add( TPair<AnsiString,TValue>.Create('beta_2',beta_2) );
+    Parameters.Add( TPair<String,TValue>.Create('lr',lr) );
+    Parameters.Add( TPair<String,TValue>.Create('beta_1',beta_1) );
+    Parameters.Add( TPair<String,TValue>.Create('beta_2',beta_2) );
 
     if epsilon <> nil then
-      Parameters.Add( TPair<AnsiString,TValue>.Create('epsilon',epsilon^) );
+      Parameters.Add( TPair<String,TValue>.Create('epsilon',epsilon^) );
 
-    Parameters.Add( TPair<AnsiString,TValue>.Create('schedule_decay',schedule_decay) );
+    Parameters.Add( TPair<String,TValue>.Create('schedule_decay',schedule_decay) );
 
     PyInstance := GetKerasClassIstance('optimizers.Nadam');
     init();
@@ -1461,8 +1476,8 @@ function TMetrics.BinaryAccuracy(y_true, y_pred: TNDarray): TNDarray;
 begin
     Parameters.Clear;
 
-    Parameters.Add( TPair<AnsiString,TValue>.Create('y_true',y_true) );
-    Parameters.Add( TPair<AnsiString,TValue>.Create('y_pred',y_pred) );
+    Parameters.Add( TPair<String,TValue>.Create('y_true',y_true) );
+    Parameters.Add( TPair<String,TValue>.Create('y_pred',y_pred) );
 
     Result := TNDArray.Create( InvokeStaticMethod(caller,'binary_accuracy',Parameters) );
 
@@ -1472,8 +1487,8 @@ function TMetrics.CategoricalAccuracy(y_true, y_pred: TNDarray): TNDarray;
 begin
     Parameters.Clear;
 
-    Parameters.Add( TPair<AnsiString,TValue>.Create('y_true',y_true) );
-    Parameters.Add( TPair<AnsiString,TValue>.Create('y_pred',y_pred) );
+    Parameters.Add( TPair<String,TValue>.Create('y_true',y_true) );
+    Parameters.Add( TPair<String,TValue>.Create('y_pred',y_pred) );
 
     Result := TNDArray.Create( InvokeStaticMethod(caller,'categorical_accuracy',Parameters) );
 end;
@@ -1482,8 +1497,8 @@ function TMetrics.Cosine(y_true, y_pred: TNDarray): TNDarray;
 begin
     Parameters.Clear;
 
-    Parameters.Add( TPair<AnsiString,TValue>.Create('y_true',y_true) );
-    Parameters.Add( TPair<AnsiString,TValue>.Create('y_pred',y_pred) );
+    Parameters.Add( TPair<String,TValue>.Create('y_true',y_true) );
+    Parameters.Add( TPair<String,TValue>.Create('y_pred',y_pred) );
 
     Result := TNDArray.Create( InvokeStaticMethod(caller,'cosine',Parameters) )
 end;
@@ -1492,8 +1507,8 @@ function TMetrics.MAE(y_true, y_pred: TNDarray): TNDarray;
 begin
     Parameters.Clear;
 
-    Parameters.Add( TPair<AnsiString,TValue>.Create('y_true',y_true) );
-    Parameters.Add( TPair<AnsiString,TValue>.Create('y_pred',y_pred) );
+    Parameters.Add( TPair<String,TValue>.Create('y_true',y_true) );
+    Parameters.Add( TPair<String,TValue>.Create('y_pred',y_pred) );
 
     Result := TNDArray.Create( InvokeStaticMethod(caller,'mae',Parameters) )
 end;
@@ -1502,8 +1517,8 @@ function TMetrics.MAPE(y_true, y_pred: TNDarray): TNDarray;
 begin
     Parameters.Clear;
 
-    Parameters.Add( TPair<AnsiString,TValue>.Create('y_true',y_true) );
-    Parameters.Add( TPair<AnsiString,TValue>.Create('y_pred',y_pred) );
+    Parameters.Add( TPair<String,TValue>.Create('y_true',y_true) );
+    Parameters.Add( TPair<String,TValue>.Create('y_pred',y_pred) );
 
     Result := TNDArray.Create( InvokeStaticMethod(caller,'mape',Parameters) )
 end;
@@ -1512,8 +1527,8 @@ function TMetrics.MSE(y_true, y_pred: TNDarray): TNDarray;
 begin
     Parameters.Clear;
 
-    Parameters.Add( TPair<AnsiString,TValue>.Create('y_true',y_true) );
-    Parameters.Add( TPair<AnsiString,TValue>.Create('y_pred',y_pred) );
+    Parameters.Add( TPair<String,TValue>.Create('y_true',y_true) );
+    Parameters.Add( TPair<String,TValue>.Create('y_pred',y_pred) );
 
     Result := TNDArray.Create( InvokeStaticMethod(caller,'mse',Parameters) )
 end;
@@ -1522,8 +1537,8 @@ function TMetrics.MSLE(y_true, y_pred: TNDarray): TNDarray;
 begin
     Parameters.Clear;
 
-    Parameters.Add( TPair<AnsiString,TValue>.Create('y_true',y_true) );
-    Parameters.Add( TPair<AnsiString,TValue>.Create('y_pred',y_pred) );
+    Parameters.Add( TPair<String,TValue>.Create('y_true',y_true) );
+    Parameters.Add( TPair<String,TValue>.Create('y_pred',y_pred) );
 
     Result := TNDArray.Create( InvokeStaticMethod(caller,'msle',Parameters) )
 end;
@@ -1532,8 +1547,8 @@ function TMetrics.SparseCategoricalAccuracy(y_true, y_pred: TNDarray): TNDarray;
 begin
     Parameters.Clear;
 
-    Parameters.Add( TPair<AnsiString,TValue>.Create('y_true',y_true) );
-    Parameters.Add( TPair<AnsiString,TValue>.Create('y_pred',y_pred) );
+    Parameters.Add( TPair<String,TValue>.Create('y_true',y_true) );
+    Parameters.Add( TPair<String,TValue>.Create('y_pred',y_pred) );
 
     Result := TNDArray.Create( InvokeStaticMethod(caller,'sparse_categorical_accuracy',Parameters) )
 end;
@@ -1542,8 +1557,8 @@ function TMetrics.SparseTopKCategoricalAccuracy(y_true, y_pred: TNDarray; k: Int
 begin
     Parameters.Clear;
 
-    Parameters.Add( TPair<AnsiString,TValue>.Create('y_true',y_true) );
-    Parameters.Add( TPair<AnsiString,TValue>.Create('y_pred',y_pred) );
+    Parameters.Add( TPair<String,TValue>.Create('y_true',y_true) );
+    Parameters.Add( TPair<String,TValue>.Create('y_pred',y_pred) );
 
     Result := TNDArray.Create( InvokeStaticMethod(caller,'sparse_top_k_categorical_accuracy',Parameters) )
 end;
@@ -1552,8 +1567,8 @@ function TMetrics.TopKCategoricalAccuracy(y_true, y_pred: TNDarray; k: Integer):
 begin
     Parameters.Clear;
 
-    Parameters.Add( TPair<AnsiString,TValue>.Create('y_true',y_true) );
-    Parameters.Add( TPair<AnsiString,TValue>.Create('y_pred',y_pred) );
+    Parameters.Add( TPair<String,TValue>.Create('y_true',y_true) );
+    Parameters.Add( TPair<String,TValue>.Create('y_pred',y_pred) );
 
     Result := TNDArray.Create( InvokeStaticMethod(caller,'top_k_categorical_accuracy',Parameters) )
 end;
@@ -1572,8 +1587,8 @@ function TLosses.BinaryCrossentropy(y_true, y_pred: TNDarray): TNDarray;
 begin
     Parameters.Clear;
 
-    Parameters.Add( TPair<AnsiString,TValue>.Create('y_true',y_true) );
-    Parameters.Add( TPair<AnsiString,TValue>.Create('y_pred',y_pred) );
+    Parameters.Add( TPair<String,TValue>.Create('y_true',y_true) );
+    Parameters.Add( TPair<String,TValue>.Create('y_pred',y_pred) );
 
     Result := TNDArray.Create( InvokeStaticMethod(caller,'binary_crossentropy',Parameters) )
 end;
@@ -1582,8 +1597,8 @@ function TLosses.CategoricalCrossentropy(y_true, y_pred: TNDarray): TNDarray;
 begin
     Parameters.Clear;
 
-    Parameters.Add( TPair<AnsiString,TValue>.Create('y_true',y_true) );
-    Parameters.Add( TPair<AnsiString,TValue>.Create('y_pred',y_pred) );
+    Parameters.Add( TPair<String,TValue>.Create('y_true',y_true) );
+    Parameters.Add( TPair<String,TValue>.Create('y_pred',y_pred) );
 
     Result := TNDArray.Create( InvokeStaticMethod(caller,'categorical_crossentropy',Parameters) )
 end;
@@ -1592,8 +1607,8 @@ function TLosses.CategoricalHinge(y_true, y_pred: TNDarray): TNDarray;
 begin
     Parameters.Clear;
 
-    Parameters.Add( TPair<AnsiString,TValue>.Create('y_true',y_true) );
-    Parameters.Add( TPair<AnsiString,TValue>.Create('y_pred',y_pred) );
+    Parameters.Add( TPair<String,TValue>.Create('y_true',y_true) );
+    Parameters.Add( TPair<String,TValue>.Create('y_pred',y_pred) );
 
     Result := TNDArray.Create( InvokeStaticMethod(caller,'categorical_hinge',Parameters) )
 end;
@@ -1602,8 +1617,8 @@ function TLosses.CosineProximity(y_true, y_pred: TNDarray): TNDarray;
 begin
     Parameters.Clear;
 
-    Parameters.Add( TPair<AnsiString,TValue>.Create('y_true',y_true) );
-    Parameters.Add( TPair<AnsiString,TValue>.Create('y_pred',y_pred) );
+    Parameters.Add( TPair<String,TValue>.Create('y_true',y_true) );
+    Parameters.Add( TPair<String,TValue>.Create('y_pred',y_pred) );
 
     Result := TNDArray.Create( InvokeStaticMethod(caller,'cosine_proximity',Parameters) )
 end;
@@ -1612,8 +1627,8 @@ function TLosses.Hinge(y_true, y_pred: TNDarray): TNDarray;
 begin
     Parameters.Clear;
 
-    Parameters.Add( TPair<AnsiString,TValue>.Create('y_true',y_true) );
-    Parameters.Add( TPair<AnsiString,TValue>.Create('y_pred',y_pred) );
+    Parameters.Add( TPair<String,TValue>.Create('y_true',y_true) );
+    Parameters.Add( TPair<String,TValue>.Create('y_pred',y_pred) );
 
     Result := TNDArray.Create( InvokeStaticMethod(caller,'hinge',Parameters) )
 end;
@@ -1622,8 +1637,8 @@ function TLosses.KullbackLeiblerDivergence(y_true, y_pred: TNDarray): TNDarray;
 begin
     Parameters.Clear;
 
-    Parameters.Add( TPair<AnsiString,TValue>.Create('y_true',y_true) );
-    Parameters.Add( TPair<AnsiString,TValue>.Create('y_pred',y_pred) );
+    Parameters.Add( TPair<String,TValue>.Create('y_true',y_true) );
+    Parameters.Add( TPair<String,TValue>.Create('y_pred',y_pred) );
 
     Result := TNDArray.Create( InvokeStaticMethod(caller,'kullback_leibler_divergence',Parameters) )
 end;
@@ -1632,8 +1647,8 @@ function TLosses.LogCosh(y_true, y_pred: TNDarray): TNDarray;
 begin
     Parameters.Clear;
 
-    Parameters.Add( TPair<AnsiString,TValue>.Create('y_true',y_true) );
-    Parameters.Add( TPair<AnsiString,TValue>.Create('y_pred',y_pred) );
+    Parameters.Add( TPair<String,TValue>.Create('y_true',y_true) );
+    Parameters.Add( TPair<String,TValue>.Create('y_pred',y_pred) );
 
     Result := TNDArray.Create( InvokeStaticMethod(caller,'logcosh',Parameters) )
 end;
@@ -1642,8 +1657,8 @@ function TLosses.MeanAbsoluteError(y_true, y_pred: TNDarray): TNDarray;
 begin
     Parameters.Clear;
 
-    Parameters.Add( TPair<AnsiString,TValue>.Create('y_true',y_true) );
-    Parameters.Add( TPair<AnsiString,TValue>.Create('y_pred',y_pred) );
+    Parameters.Add( TPair<String,TValue>.Create('y_true',y_true) );
+    Parameters.Add( TPair<String,TValue>.Create('y_pred',y_pred) );
 
     Result := TNDArray.Create( InvokeStaticMethod(caller,'mean_absolute_error',Parameters) )
 end;
@@ -1652,8 +1667,8 @@ function TLosses.MeanAbsolutePercentageError(y_true, y_pred: TNDarray): TNDarray
 begin
     Parameters.Clear;
 
-    Parameters.Add( TPair<AnsiString,TValue>.Create('y_true',y_true) );
-    Parameters.Add( TPair<AnsiString,TValue>.Create('y_pred',y_pred) );
+    Parameters.Add( TPair<String,TValue>.Create('y_true',y_true) );
+    Parameters.Add( TPair<String,TValue>.Create('y_pred',y_pred) );
 
     Result := TNDArray.Create( InvokeStaticMethod(caller,'mean_absolute_percentage_error',Parameters) )
 end;
@@ -1662,8 +1677,8 @@ function TLosses.MeanSquaredError(y_true, y_pred: TNDarray): TNDarray;
 begin
     Parameters.Clear;
 
-    Parameters.Add( TPair<AnsiString,TValue>.Create('y_true',y_true) );
-    Parameters.Add( TPair<AnsiString,TValue>.Create('y_pred',y_pred) );
+    Parameters.Add( TPair<String,TValue>.Create('y_true',y_true) );
+    Parameters.Add( TPair<String,TValue>.Create('y_pred',y_pred) );
 
     Result := TNDArray.Create( InvokeStaticMethod(caller,'mean_squared_error',Parameters) )
 end;
@@ -1672,8 +1687,8 @@ function TLosses.MeanSquaredLogarithmicError(y_true, y_pred: TNDarray): TNDarray
 begin
     Parameters.Clear;
 
-    Parameters.Add( TPair<AnsiString,TValue>.Create('y_true',y_true) );
-    Parameters.Add( TPair<AnsiString,TValue>.Create('y_pred',y_pred) );
+    Parameters.Add( TPair<String,TValue>.Create('y_true',y_true) );
+    Parameters.Add( TPair<String,TValue>.Create('y_pred',y_pred) );
 
     Result := TNDArray.Create( InvokeStaticMethod(caller,'mean_squared_logarithmic_error',Parameters) )
 end;
@@ -1682,8 +1697,8 @@ function TLosses.Poisson(y_true, y_pred: TNDarray): TNDarray;
 begin
     Parameters.Clear;
 
-    Parameters.Add( TPair<AnsiString,TValue>.Create('y_true',y_true) );
-    Parameters.Add( TPair<AnsiString,TValue>.Create('y_pred',y_pred) );
+    Parameters.Add( TPair<String,TValue>.Create('y_true',y_true) );
+    Parameters.Add( TPair<String,TValue>.Create('y_pred',y_pred) );
 
     Result := TNDArray.Create( InvokeStaticMethod(caller,'poisson',Parameters) )
 end;
@@ -1692,8 +1707,8 @@ function TLosses.SparseCategoricalCrossentropy(y_true, y_pred: TNDarray): TNDarr
 begin
     Parameters.Clear;
 
-    Parameters.Add( TPair<AnsiString,TValue>.Create('y_true',y_true) );
-    Parameters.Add( TPair<AnsiString,TValue>.Create('y_pred',y_pred) );
+    Parameters.Add( TPair<String,TValue>.Create('y_true',y_true) );
+    Parameters.Add( TPair<String,TValue>.Create('y_pred',y_pred) );
 
     Result := TNDArray.Create( InvokeStaticMethod(caller,'sparse_categorical_crossentropy',Parameters) )
 end;
@@ -1702,8 +1717,8 @@ function TLosses.SquaredHinge(y_true, y_pred: TNDarray): TNDarray;
 begin
     Parameters.Clear;
 
-    Parameters.Add( TPair<AnsiString,TValue>.Create('y_true',y_true) );
-    Parameters.Add( TPair<AnsiString,TValue>.Create('y_pred',y_pred) );
+    Parameters.Add( TPair<String,TValue>.Create('y_true',y_true) );
+    Parameters.Add( TPair<String,TValue>.Create('y_pred',y_pred) );
 
     Result := TNDArray.Create( InvokeStaticMethod(caller,'squared_hinge',Parameters) )
 end;
@@ -1715,17 +1730,19 @@ begin
     inherited Create;
 end;
 
-function TBostonHousing.load_data(path: string ; test_split: double; seed : Integer): TArray<TNDArray>;
+class function TBostonHousing.load_data(path: string ; test_split: double; seed : Integer): TArray<TNDArray>;
 var
     py     : TPythonObject;
 begin
-    Parameters.Add( TPair<AnsiString,TValue>.Create('path',path) );
-    Parameters.Add( TPair<AnsiString,TValue>.Create('test_split',test_split) );
-    Parameters.Add( TPair<AnsiString,TValue>.Create('seed',seed) );
+    Create;
 
-    PyInstance := GetKerasClassIstance('datasets.boston_housing');
+    var args: TList< TPair<String,TValue> > := TList< TPair<String,TValue> >.Create;
 
-    py  := InvokeStaticMethod(PyInstance,'load_data',Parameters);
+    args.Add( TPair<String,TValue>.Create('path',path) );
+    args.Add( TPair<String,TValue>.Create('test_split',test_split) );
+    args.Add( TPair<String,TValue>.Create('seed',seed) );
+
+    py  := InvokeStaticMethod( GetKerasClassIstance('datasets.boston_housing') ,'load_data',args);
 
     Result := TTupleSolver.TupleToList(py);
 
@@ -1744,7 +1761,7 @@ var
 begin
     Create;
 
-    var args: TList< TPair<AnsiString,TValue> > := TList< TPair<AnsiString,TValue> >.Create;
+    var args: TList< TPair<String,TValue> > := TList< TPair<String,TValue> >.Create;
 
     py         := InvokeStaticMethod( GetKerasClassIstance('datasets.cifar10') ,'load_data',args);
     Result     := TTupleSolver.TupleToList(py);
@@ -1764,9 +1781,9 @@ var
 begin
     Create;
 
-    var args: TList< TPair<AnsiString,TValue> > := TList< TPair<AnsiString,TValue> >.Create;
+    var args: TList< TPair<String,TValue> > := TList< TPair<String,TValue> >.Create;
 
-    args.Add( TPair<AnsiString,TValue>.Create('label_mode',label_mode) );
+    args.Add( TPair<String,TValue>.Create('label_mode',label_mode) );
 
     py         := InvokeStaticMethod( GetKerasClassIstance('datasets.cifar100') ,'load_data',args);
     Result     := TTupleSolver.TupleToList(py);
@@ -1786,7 +1803,7 @@ var
 begin
     Create;
 
-    var args: TList< TPair<AnsiString,TValue> > := TList< TPair<AnsiString,TValue> >.Create;
+    var args: TList< TPair<String,TValue> > := TList< TPair<String,TValue> >.Create;
 
     py         := InvokeStaticMethod( GetKerasClassIstance('datasets.fashion_mnist') ,'load_data',args);
     Result     := TTupleSolver.TupleToList(py);
@@ -1806,9 +1823,9 @@ var
 begin
     Create;
 
-    var args: TList< TPair<AnsiString,TValue> > := TList< TPair<AnsiString,TValue> >.Create;
+    var args: TList< TPair<String,TValue> > := TList< TPair<String,TValue> >.Create;
 
-    args.Add( TPair<AnsiString,TValue>.Create('path',path) );
+    args.Add( TPair<String,TValue>.Create('path',path) );
 
     py         := InvokeStaticMethod(GetKerasClassIstance('datasets.mnist'),'load_data',args);
     Result     := TTupleSolver.TupleToList(py);
@@ -1822,21 +1839,22 @@ begin
     inherited Create;
 end;
 
-function TIMDB.GetWordIndex(path: string): TDictionary<string, Integer>;
+class function TIMDB.GetWordIndex(path: string): TDictionary<string, Integer>;
 var
   dict : TDictionary<string, Integer>;
   py   : TPyDict;
   keys : TArray<string>;
   key  : string;
 begin
+    Create;
+
+    var args: TList< TPair<String,TValue> > := TList< TPair<String,TValue> >.Create;
+
     dict := TDictionary<string, Integer>.Create;
 
-    Parameters.Clear;
+    args.Add( TPair<String,TValue>.Create('path',path) );
 
-    Parameters.Add( TPair<AnsiString,TValue>.Create('path',path) );
-
-    PyInstance := GetKerasClassIstance('datasets.imdb');
-    py := TPyDict.Create( InvokeStaticMethod(PyInstance,'get_word_index',Parameters) );
+    py := TPyDict.Create( InvokeStaticMethod( GetKerasClassIstance('datasets.imdb') ,'get_word_index',args) );
 
     keys := py.Keys.AsArrayofString;
     for key in keys do
@@ -1845,27 +1863,27 @@ begin
     Result := dict;
 end;
 
-function TIMDB.load_data(path: string; num_words: PInteger; skip_top: Integer; maxlen: PInteger; seed, start_char,
+class function TIMDB.load_data(path: string; num_words: PInteger; skip_top: Integer; maxlen: PInteger; seed, start_char,
                                                                                    oov_char, index_from: Integer): TArray<TNDArray>;
 var
     py     : TPythonObject;
 begin
-    Parameters.Clear;
+    Create;
 
-    Parameters.Add( TPair<AnsiString,TValue>.Create('path',path) );
+    var args: TList< TPair<String,TValue> > := TList< TPair<String,TValue> >.Create;
+
+    args.Add( TPair<String,TValue>.Create('path',path) );
     if num_words <> nil then
-      Parameters.Add( TPair<AnsiString,TValue>.Create('num_words',num_words^) );
-    Parameters.Add( TPair<AnsiString,TValue>.Create('skip_top',skip_top) );
+      args.Add( TPair<String,TValue>.Create('num_words',num_words^) );
+    args.Add( TPair<String,TValue>.Create('skip_top',skip_top) );
     if num_words <> nil then
-      Parameters.Add( TPair<AnsiString,TValue>.Create('maxlen',maxlen^) );
-    Parameters.Add( TPair<AnsiString,TValue>.Create('seed',seed) );
-    Parameters.Add( TPair<AnsiString,TValue>.Create('start_char',start_char) );
-    Parameters.Add( TPair<AnsiString,TValue>.Create('oov_char',oov_char) );
-    Parameters.Add( TPair<AnsiString,TValue>.Create('index_from',index_from) );
+      args.Add( TPair<String,TValue>.Create('maxlen',maxlen^) );
+    args.Add( TPair<String,TValue>.Create('seed',seed) );
+    args.Add( TPair<String,TValue>.Create('start_char',start_char) );
+    args.Add( TPair<String,TValue>.Create('oov_char',oov_char) );
+    args.Add( TPair<String,TValue>.Create('index_from',index_from) );
 
-    PyInstance := GetKerasClassIstance('datasets.imdb');
-
-    py  := InvokeStaticMethod(PyInstance,'load_data',Parameters);
+    py  := InvokeStaticMethod( GetKerasClassIstance('datasets.imdb') ,'load_data',args);
 
     Result := TTupleSolver.TupleToList(py);
 
@@ -1885,17 +1903,17 @@ var
 begin
     Parameters.Clear;
 
-    Parameters.Add( TPair<AnsiString,TValue>.Create('path',path) );
+    Parameters.Add( TPair<String,TValue>.Create('path',path) );
     if num_words <> nil then
-      Parameters.Add( TPair<AnsiString,TValue>.Create('num_words',num_words^) );
-    Parameters.Add( TPair<AnsiString,TValue>.Create('skip_top',skip_top) );
+      Parameters.Add( TPair<String,TValue>.Create('num_words',num_words^) );
+    Parameters.Add( TPair<String,TValue>.Create('skip_top',skip_top) );
     if num_words <> nil then
-      Parameters.Add( TPair<AnsiString,TValue>.Create('maxlen',maxlen^) );
-    Parameters.Add( TPair<AnsiString,TValue>.Create('test_split',test_split) );
-    Parameters.Add( TPair<AnsiString,TValue>.Create('seed',seed) );
-    Parameters.Add( TPair<AnsiString,TValue>.Create('start_char',start_char) );
-    Parameters.Add( TPair<AnsiString,TValue>.Create('oov_char',oov_char) );
-    Parameters.Add( TPair<AnsiString,TValue>.Create('index_from',index_from) );
+      Parameters.Add( TPair<String,TValue>.Create('maxlen',maxlen^) );
+    Parameters.Add( TPair<String,TValue>.Create('test_split',test_split) );
+    Parameters.Add( TPair<String,TValue>.Create('seed',seed) );
+    Parameters.Add( TPair<String,TValue>.Create('start_char',start_char) );
+    Parameters.Add( TPair<String,TValue>.Create('oov_char',oov_char) );
+    Parameters.Add( TPair<String,TValue>.Create('index_from',index_from) );
 
     PyInstance := GetKerasClassIstance('datasets.reuters');
 
@@ -1912,8 +1930,8 @@ constructor TMaxNorm.Create(max_value: double; axis: Integer);
 begin
     inherited Create;
 
-    Parameters.Add( TPair<AnsiString,TValue>.Create('max_value',max_value) );
-    Parameters.Add( TPair<AnsiString,TValue>.Create('axis',axis) );
+    Parameters.Add( TPair<String,TValue>.Create('max_value',max_value) );
+    Parameters.Add( TPair<String,TValue>.Create('axis',axis) );
 
     PyInstance := GetKerasClassIstance('constraints.MaxNorm');
     init();
@@ -1935,7 +1953,7 @@ constructor TUnitNorm.Create(axis: Integer);
 begin
     inherited Create;
 
-    Parameters.Add( TPair<AnsiString,TValue>.Create('axis',axis) );
+    Parameters.Add( TPair<String,TValue>.Create('axis',axis) );
 
     PyInstance := GetKerasClassIstance('constraints.UnitNorm');
     init();
@@ -1947,10 +1965,10 @@ constructor TMinMaxNorm.Create(min_value, max_value, rate: Double; axis: Integer
 begin
     inherited Create;
 
-    Parameters.Add( TPair<AnsiString,TValue>.Create('min_value',min_value) );
-    Parameters.Add( TPair<AnsiString,TValue>.Create('max_value',max_value) );
-    Parameters.Add( TPair<AnsiString,TValue>.Create('rate',rate) );
-    Parameters.Add( TPair<AnsiString,TValue>.Create('axis',axis) );
+    Parameters.Add( TPair<String,TValue>.Create('min_value',min_value) );
+    Parameters.Add( TPair<String,TValue>.Create('max_value',max_value) );
+    Parameters.Add( TPair<String,TValue>.Create('rate',rate) );
+    Parameters.Add( TPair<String,TValue>.Create('axis',axis) );
 
     PyInstance := GetKerasClassIstance('constraints.MinMaxNorm');
     init();
@@ -2003,7 +2021,7 @@ constructor TBaseLogger.Create(stateful_metrics: TArray<string>);
 begin
     inherited Create;
 
-    Parameters.Add( TPair<AnsiString,TValue>.Create('stateful_metrics',TValue.FromArray<String>(stateful_metrics)) );
+    Parameters.Add( TPair<String,TValue>.Create('stateful_metrics',TValue.FromArray<String>(stateful_metrics)) );
 
 
     PyInstance := GetKerasClassIstance('callbacks.BaseLogger');
@@ -2027,8 +2045,8 @@ constructor TProgbarLogger.Create(count_mode: string; stateful_metrics: TArray<s
 begin
     inherited Create;
 
-    Parameters.Add( TPair<AnsiString,TValue>.Create('count_mode',count_mode ));
-    Parameters.Add( TPair<AnsiString,TValue>.Create('stateful_metrics',TValue.FromArray<String>(stateful_metrics)) );
+    Parameters.Add( TPair<String,TValue>.Create('count_mode',count_mode ));
+    Parameters.Add( TPair<String,TValue>.Create('stateful_metrics',TValue.FromArray<String>(stateful_metrics)) );
 
     PyInstance := GetKerasClassIstance('callbacks.ProgbarLogger');
     init();
@@ -2090,13 +2108,13 @@ constructor TModelCheckpoint.Create(filepath, monitor: string; verbose: Integer;
 begin
     inherited Create;
 
-    Parameters.Add( TPair<AnsiString,TValue>.Create('filepath',filepath ));
-    Parameters.Add( TPair<AnsiString,TValue>.Create('monitor',monitor ));
-    Parameters.Add( TPair<AnsiString,TValue>.Create('verbose',verbose ));
-    Parameters.Add( TPair<AnsiString,TValue>.Create('save_best_only',save_best_only ));
-    Parameters.Add( TPair<AnsiString,TValue>.Create('save_weights_only',save_weights_only ));
-    Parameters.Add( TPair<AnsiString,TValue>.Create('mode',mode ));
-    Parameters.Add( TPair<AnsiString,TValue>.Create('period',period ));
+    Parameters.Add( TPair<String,TValue>.Create('filepath',filepath ));
+    Parameters.Add( TPair<String,TValue>.Create('monitor',monitor ));
+    Parameters.Add( TPair<String,TValue>.Create('verbose',verbose ));
+    Parameters.Add( TPair<String,TValue>.Create('save_best_only',save_best_only ));
+    Parameters.Add( TPair<String,TValue>.Create('save_weights_only',save_weights_only ));
+    Parameters.Add( TPair<String,TValue>.Create('mode',mode ));
+    Parameters.Add( TPair<String,TValue>.Create('period',period ));
 
     PyInstance := GetKerasClassIstance('callbacks.ModelCheckpoint');
     init();
@@ -2109,14 +2127,14 @@ constructor TEarlyStopping.Create(monitor: string; min_delta: Double; patience, 
 begin
     inherited Create;
 
-    Parameters.Add( TPair<AnsiString,TValue>.Create('monitor',monitor ));
-    Parameters.Add( TPair<AnsiString,TValue>.Create('min_delta',min_delta ));
-    Parameters.Add( TPair<AnsiString,TValue>.Create('patience',patience ));
-    Parameters.Add( TPair<AnsiString,TValue>.Create('verbose',verbose ));
-    Parameters.Add( TPair<AnsiString,TValue>.Create('mode',mode ));
+    Parameters.Add( TPair<String,TValue>.Create('monitor',monitor ));
+    Parameters.Add( TPair<String,TValue>.Create('min_delta',min_delta ));
+    Parameters.Add( TPair<String,TValue>.Create('patience',patience ));
+    Parameters.Add( TPair<String,TValue>.Create('verbose',verbose ));
+    Parameters.Add( TPair<String,TValue>.Create('mode',mode ));
     if baseline <> nil then
-      Parameters.Add( TPair<AnsiString,TValue>.Create('baseline',baseline^ ));
-    Parameters.Add( TPair<AnsiString,TValue>.Create('restore_best_weights',restore_best_weights ));
+      Parameters.Add( TPair<String,TValue>.Create('baseline',baseline^ ));
+    Parameters.Add( TPair<String,TValue>.Create('restore_best_weights',restore_best_weights ));
 
     PyInstance := GetKerasClassIstance('callbacks.EarlyStopping');
     init();
@@ -2128,12 +2146,12 @@ constructor TRemoteMonitor.Create(root, path, field: string; headers: TDictionar
 begin
     inherited Create;
 
-    Parameters.Add( TPair<AnsiString,TValue>.Create('root',root ));
-    Parameters.Add( TPair<AnsiString,TValue>.Create('path',path ));
-    Parameters.Add( TPair<AnsiString,TValue>.Create('field',field ));
+    Parameters.Add( TPair<String,TValue>.Create('root',root ));
+    Parameters.Add( TPair<String,TValue>.Create('path',path ));
+    Parameters.Add( TPair<String,TValue>.Create('field',field ));
     if headers <> nil then
-       Parameters.Add( TPair<AnsiString,TValue>.Create('headers', ToDict(headers) ));
-    Parameters.Add( TPair<AnsiString,TValue>.Create('send_as_json',send_as_json ));
+       Parameters.Add( TPair<String,TValue>.Create('headers', ToDict(headers) ));
+    Parameters.Add( TPair<String,TValue>.Create('send_as_json',send_as_json ));
 
     PyInstance := GetKerasClassIstance('callbacks.RemoteMonitor');
     init();
@@ -2141,13 +2159,23 @@ end;
 
 { TLearningRateScheduler }
 
-{ TODO -oMax -c : verificare ! errore anche nel progetto originale 25/02/2020 19:12:54 }
-constructor TLearningRateScheduler.Create(schedule: TFunSchedule; verbose: Integer);
+{ DONE -oMax -c : verificare ! errore anche nel progetto originale 25/02/2020 19:12:54 }
+constructor TLearningRateScheduler.Create(schedule: PyCFunction; verbose: Integer);
 begin
     inherited Create;
 
-    Parameters.Add( TPair<AnsiString,TValue>.Create('schedule',@schedule ));
-    Parameters.Add( TPair<AnsiString,TValue>.Create('verbose',verbose ));
+    var m : TPythonModule := TPythonModule.Create(nil);
+    m.ModuleName := 'kcallbacks';
+    m.Engine     := g_MyPyEngine;
+    m.Initialize;
+
+    var mr : PPyMethodDef := m.AddMethod(pansichar('cbSched'),schedule,PAnsiChar('LearningRateScheduler Callback Func.'));
+    CreatePyFunc(m,mr);
+
+    var cb : TPythonObject := TPythonObject.create(m.Module).GetAttr('cbSched') ;
+
+    Parameters.Add( TPair<String,TValue>.Create('schedule', cb ));
+    Parameters.Add( TPair<String,TValue>.Create('verbose',verbose ));
 
     PyInstance := GetKerasClassIstance('callbacks.LearningRateScheduler');
     init();
@@ -2161,20 +2189,20 @@ constructor TTensorBoard.Create(log_dir: string; histogram_freq, batch_size: Int
 begin
     inherited Create;
 
-    Parameters.Add( TPair<AnsiString,TValue>.Create('log_dir',log_dir ));
-    Parameters.Add( TPair<AnsiString,TValue>.Create('histogram_freq',histogram_freq ));
-    Parameters.Add( TPair<AnsiString,TValue>.Create('batch_size',batch_size ));
-    Parameters.Add( TPair<AnsiString,TValue>.Create('write_graph',write_graph ));
-    Parameters.Add( TPair<AnsiString,TValue>.Create('write_grads',write_grads ));
-    Parameters.Add( TPair<AnsiString,TValue>.Create('write_images',write_images ));
-    Parameters.Add( TPair<AnsiString,TValue>.Create('embeddings_freq',embeddings_freq ));
+    Parameters.Add( TPair<String,TValue>.Create('log_dir',log_dir ));
+    Parameters.Add( TPair<String,TValue>.Create('histogram_freq',histogram_freq ));
+    Parameters.Add( TPair<String,TValue>.Create('batch_size',batch_size ));
+    Parameters.Add( TPair<String,TValue>.Create('write_graph',write_graph ));
+    Parameters.Add( TPair<String,TValue>.Create('write_grads',write_grads ));
+    Parameters.Add( TPair<String,TValue>.Create('write_images',write_images ));
+    Parameters.Add( TPair<String,TValue>.Create('embeddings_freq',embeddings_freq ));
     if embeddings_layer_names <> nil then
-        Parameters.Add( TPair<AnsiString,TValue>.Create('embeddings_layer_names',TValue.FromArray<string>(embeddings_layer_names) ));
+        Parameters.Add( TPair<String,TValue>.Create('embeddings_layer_names',TValue.FromArray<string>(embeddings_layer_names) ));
     if embeddings_metadata <> nil then
-        Parameters.Add( TPair<AnsiString,TValue>.Create('embeddings_metadata',ToDict(embeddings_metadata) ));
+        Parameters.Add( TPair<String,TValue>.Create('embeddings_metadata',ToDict(embeddings_metadata) ));
     if embeddings_data <> nil then
-        Parameters.Add( TPair<AnsiString,TValue>.Create('embeddings_data', embeddings_data ));
-    Parameters.Add( TPair<AnsiString,TValue>.Create('update_freq',update_freq ));
+        Parameters.Add( TPair<String,TValue>.Create('embeddings_data', embeddings_data ));
+    Parameters.Add( TPair<String,TValue>.Create('update_freq',update_freq ));
 
     PyInstance := GetKerasClassIstance('callbacks.TensorBoard');
     init();
@@ -2187,14 +2215,14 @@ constructor TReduceLROnPlateau.Create(monitor: string; factor: Double; patience,
 begin
     inherited Create;
 
-    Parameters.Add( TPair<AnsiString,TValue>.Create('monitor',monitor ));
-    Parameters.Add( TPair<AnsiString,TValue>.Create('factor',factor ));
-    Parameters.Add( TPair<AnsiString,TValue>.Create('patience',patience ));
-    Parameters.Add( TPair<AnsiString,TValue>.Create('verbose',verbose ));
-    Parameters.Add( TPair<AnsiString,TValue>.Create('mode',mode ));
-    Parameters.Add( TPair<AnsiString,TValue>.Create('min_delta',min_delta ));
-    Parameters.Add( TPair<AnsiString,TValue>.Create('cooldown',cooldown ));
-    Parameters.Add( TPair<AnsiString,TValue>.Create('min_lr',min_lr ));
+    Parameters.Add( TPair<String,TValue>.Create('monitor',monitor ));
+    Parameters.Add( TPair<String,TValue>.Create('factor',factor ));
+    Parameters.Add( TPair<String,TValue>.Create('patience',patience ));
+    Parameters.Add( TPair<String,TValue>.Create('verbose',verbose ));
+    Parameters.Add( TPair<String,TValue>.Create('mode',mode ));
+    Parameters.Add( TPair<String,TValue>.Create('min_delta',min_delta ));
+    Parameters.Add( TPair<String,TValue>.Create('cooldown',cooldown ));
+    Parameters.Add( TPair<String,TValue>.Create('min_lr',min_lr ));
 
     PyInstance := GetKerasClassIstance('callbacks.ReduceLROnPlateau');
     init();
@@ -2206,9 +2234,9 @@ constructor TCSVLogger.Create(filename, separator: string; append: Boolean);
 begin
     inherited Create;
 
-    Parameters.Add( TPair<AnsiString,TValue>.Create('filename',filename ));
-    Parameters.Add( TPair<AnsiString,TValue>.Create('separator',separator ));
-    Parameters.Add( TPair<AnsiString,TValue>.Create('append',append ));
+    Parameters.Add( TPair<String,TValue>.Create('filename',filename ));
+    Parameters.Add( TPair<String,TValue>.Create('separator',separator ));
+    Parameters.Add( TPair<String,TValue>.Create('append',append ));
 
     PyInstance := GetKerasClassIstance('callbacks.CSVLogger');
     init();
@@ -2227,8 +2255,8 @@ function TBackend.Cast(x: TPythonObject; dtype: string): TPythonObject;
 begin
     Parameters.Clear;
 
-    Parameters.Add( TPair<AnsiString,TValue>.Create('x',x) );
-    Parameters.Add( TPair<AnsiString,TValue>.Create('dtype',dtype) );
+    Parameters.Add( TPair<String,TValue>.Create('x',x) );
+    Parameters.Add( TPair<String,TValue>.Create('dtype',dtype) );
 
     Result := TPythonObject.Create( InvokeStaticMethod(caller,'cast',Parameters) )
 end;
@@ -2237,7 +2265,7 @@ function TBackend.CastToFloatX(x: TNDarray): TNDarray;
 begin
     Parameters.Clear;
 
-    Parameters.Add( TPair<AnsiString,TValue>.Create('x',x) );
+    Parameters.Add( TPair<String,TValue>.Create('x',x) );
 
     Result := TNDarray.Create( InvokeStaticMethod(caller,'cast_to_floatx',Parameters) )
 end;
@@ -2281,7 +2309,7 @@ function TBackend.GetUid(prefix: string): string;
 begin
     Parameters.Clear;
 
-    Parameters.Add( TPair<AnsiString,TValue>.Create('prefix',prefix) );
+    Parameters.Add( TPair<String,TValue>.Create('prefix',prefix) );
 
     Result := InvokeStaticMethod(caller,'get_uid',Parameters).ToString;
 end;
@@ -2297,7 +2325,7 @@ function TBackend.IsSparse(tensor: TNDarray): Boolean;
 begin
     Parameters.Clear;
 
-    Parameters.Add( TPair<AnsiString,TValue>.Create('tensor',tensor) );
+    Parameters.Add( TPair<String,TValue>.Create('tensor',tensor) );
 
     Result := InvokeStaticMethod(caller,'is_sparse',Parameters).AsBoolean;
 end;
@@ -2313,7 +2341,7 @@ procedure TBackend.SetEpsilon(e: Double);
 begin
     Parameters.Clear;
 
-    Parameters.Add( TPair<AnsiString,TValue>.Create('e',e) );
+    Parameters.Add( TPair<String,TValue>.Create('e',e) );
 
     InvokeStaticMethod(caller,'set_epsilon',Parameters);
 end;
@@ -2322,7 +2350,7 @@ procedure TBackend.SetFloatX(floatx: string);
 begin
     Parameters.Clear;
 
-    Parameters.Add( TPair<AnsiString,TValue>.Create('floatx',floatx) );
+    Parameters.Add( TPair<String,TValue>.Create('floatx',floatx) );
 
     InvokeStaticMethod(caller,'set_floatx',Parameters);
 end;
@@ -2331,7 +2359,7 @@ procedure TBackend.SetImageDataFormat(data_format: string);
 begin
     Parameters.Clear;
 
-    Parameters.Add( TPair<AnsiString,TValue>.Create('data_format',data_format) );
+    Parameters.Add( TPair<String,TValue>.Create('data_format',data_format) );
 
     InvokeStaticMethod(caller,'set_image_data_format',Parameters);
 end;
@@ -2340,7 +2368,7 @@ function TBackend.ToDense(tensor: TNDarray): TNDarray;
 begin
     Parameters.Clear;
 
-    Parameters.Add( TPair<AnsiString,TValue>.Create('tensor',tensor) );
+    Parameters.Add( TPair<String,TValue>.Create('tensor',tensor) );
 
     Result := TNDarray.Create( InvokeStaticMethod(caller,'to_dense',Parameters) )
 end;
