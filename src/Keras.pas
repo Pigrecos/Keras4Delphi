@@ -50,6 +50,7 @@ type
 
        class function  GetKerasClassIstance(nameClass: AnsiString): TPythonObject;
        class function  GetTFClassIstance(nameClass: AnsiString): TPythonObject;
+       class function  GetTFJSClassIstance(nameClass: AnsiString): TPythonObject; static;
        class function  GetOnnxClassIstance(nameClass: AnsiString):TPythonObject;
 
        property Item[name :string]:TValue read GetItem write SetItem; default;
@@ -534,6 +535,8 @@ end;
 
 constructor TKeras.Create;
 begin
+    if Assigned(hKerasMod) then Exit;
+
     hKerasMod :=  TPythonObject.Create( ImportModule('keras') );
 
     try
@@ -778,6 +781,24 @@ var
 begin
     spilt := string(nameClass).split(['.']) ;
     cClass := hTensorFlowMod.Handle;
+
+    for i := 0 to High(spilt) do
+       cClass := g_MyPyEngine.PyObject_GetAttrString(cClass, PAnsiChar( AnsiString(spilt[i]) )) ;
+
+    if cClass = nil then Result := nil
+    else                 Result := TPythonObject.Create(cClass)
+end;
+
+class function TBase.GetTFJSClassIstance(nameClass: AnsiString):TPythonObject;
+var
+  cClass : PPyObject;
+  spilt  : TArray<String>;
+  i      : Integer;
+begin
+    spilt := string(nameClass).split(['.']) ;
+    cClass := htfjsMod.Handle;
+
+    if cClass = nil then Exit(nil);
 
     for i := 0 to High(spilt) do
        cClass := g_MyPyEngine.PyObject_GetAttrString(cClass, PAnsiChar( AnsiString(spilt[i]) )) ;

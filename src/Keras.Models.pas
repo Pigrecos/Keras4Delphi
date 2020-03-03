@@ -142,7 +142,7 @@ type
   end;
 
 implementation
-    uses System.IOUtils, System.Rtti,utils,np.Base, np.Api;
+    uses Winapi.Windows, System.IOUtils, System.Rtti,utils,np.Base, np.Api;
 
 { TUtil }
 
@@ -692,7 +692,13 @@ var
 begin
     Parameters.Clear;
 
-    htf :=  GetTFClassIstance('converters');
+    htf :=  GetTFJSClassIstance('converters');
+
+    if htf = nil then
+    begin
+        MessageBoxA(0,'tensorflowjs not installated!','Info',MB_OK);
+        Exit;
+    end;
 
     Parameters.Add( TPair<AnsiString,TValue>.Create('model',PyInstance));
     Parameters.Add( TPair<AnsiString,TValue>.Create('artifacts_dir',artifacts_dir));

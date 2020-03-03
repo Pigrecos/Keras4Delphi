@@ -602,8 +602,8 @@ begin
         Result := [];
     end;
 
-    for i := 0 to  VarArrayHighBound(vArr, 1)-1 do
-       Result := Result + [ VarAsType(vArr[i],varDouble) ]
+    for i := 0 to  VarArrayHighBound(vArr, 1) do
+       Result[i] := Result + [ VarAsType(vArr[i],varDouble) ]
 
 end;
 
@@ -642,7 +642,7 @@ begin
         Result := [];
     end;
 
-    for i := 0 to  VarArrayHighBound(vArr, 1)-1 do
+    for i := 0 to  VarArrayHighBound(vArr, 1) do
        Result := Result + [ vArr[i] ]
 
 end;
@@ -682,7 +682,7 @@ begin
         Result := [];
     end;
 
-    for i := 0 to  VarArrayHighBound(vArr, 1)-1 do
+    for i := 0 to  VarArrayHighBound(vArr, 1) do
        Result := Result + [ vArr[i] ]
 
 end;

@@ -23,6 +23,7 @@ type
     splBottom: TSplitter;
     PyIOCom: TPythonGUIInputOutput;
     btn1: TButton;
+    img1: TImage;
     procedure FormShow(Sender: TObject);
     procedure btn1Click(Sender: TObject);
     procedure redtOutputChange(Sender: TObject);
@@ -44,7 +45,7 @@ var
   vNumpy : TNumPy;
 
 implementation
-     uses System.Generics.Collections, System.Diagnostics, System.IOUtils,
+     uses System.Generics.Collections, System.Diagnostics, System.IOUtils, Jpeg,
           utils,
           Keras,
           Keras.Layers,
@@ -403,11 +404,18 @@ begin
 end;
 
 procedure TfrmMain.FormShow(Sender: TObject);
+var
+   jpg: TJpegImage;
+   bmp: TBitmap;
 begin
     // inizialige python engine with gui input/output
     InitGlobal(PyIOCom);
 
     vNumpy := TNumPy.Init(True);
+
+    jpg := TJpegImage.Create;
+     jpg.LoadFromFile('nn.jpg');
+    img1.Picture.Assign(jpg);
 end;
 
 end.
