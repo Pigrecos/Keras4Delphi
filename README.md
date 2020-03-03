@@ -8,7 +8,7 @@ Runs seamlessly on CPU and GPU.
 
 ## Keras4Delphi is using:
 
-* [python4delphi](https://github.com/pyscripter/python4delphi) (thanks "@pyscripter" to the great work)
+* [python4delphi](https://github.com/pyscripter/python4delphi) (thanks [@pyscripter](https://github.com/pyscripter) to the great work)
 * [NumPy4Delphi](https://github.com/Pigrecos/Keras4Delphi/tree/master/src/NumPy) (Partial conversion)
 
 ## Prerequisite
