@@ -3,9 +3,11 @@ unit Keras.PreProcessing;
 interface
    uses  System.SysUtils, System.Generics.Collections,
          PythonEngine, Keras,Models,Python.Utils,
-         Keras.Layers;
+         Keras.Layers,
+         utils;
 
 type
+  // Sequence
   TSequenceUtil = class(TBase)
      public
        caller : TPythonObject;
@@ -15,7 +17,7 @@ type
                              dtype     : string = 'int32';
                              padding   : string = 'pre';
                              truncating: string = 'pre';
-                             value     : Double= 0): TNDArray;
+                             value     : Double= 0.0): TNDArray;
 
        function SkipGrams(sequence        : TNDarray;
                           vocabulary_size : Integer;
@@ -27,6 +29,49 @@ type
                           seed            : PInteger= nil): TNDArray;
 
        function MakeSamplingTable(size: Integer; sampling_factor : Double= 1e-05) : TNDArray;
+  end;
+
+  //TextProcessing
+  TTokenizer = class(TBase)
+     public
+       caller : TPythonObject;
+       constructor Create; overload;
+       constructor Create(num_words      : PInteger = nil;
+                          filters        : string = '!\"#$%&()*+,-./:;<=>?@[\\]^_`{|}~'+#9#13#10;
+                          lower          : Boolean = true;
+                          split          : string= ' ';
+                          char_level     : Boolean= false;
+                          oov_token      : PInteger= nil;
+                          document_count : Integer= 0);overload;
+
+       procedure FitOnTexts(texts: TArray<string>);
+       procedure FitOnSequences(sequences: TArray<TSequence>);
+       function  TextsToSequences(texts: TArray<string>):TArray<TSequence>;
+       function  SequencesToTexts(sequences: TArray<TSequence>):TArray<string>;
+       function  TextsToMatrix(texts: TArray<string>; mode: string = 'binary'):TMatrix;
+  end;
+
+  TTextUtil = class(TBase)
+     public
+       caller : TPythonObject;
+       constructor Create; overload;
+       function HashingTrick(text          : string ;
+                             n             : Integer;
+                             hash_function : string = '';
+                             filters       : string = '!\"#$%&()*+,-./:;<=>?@[\\]^_`{|}~'+#9#13#10;
+                             lower         : Boolean= true;
+                             split         : string= ' '): TArray<Integer>;
+
+       function OneHot(text   : string ;
+                       n      : Integer;
+                       filters: string = '!\"#$%&()*+,-./:;<=>?@[\\]^_`{|}~'+#9#13#10;
+                       lower  : Boolean= true;
+                       split  : string= ' '): TArray2D<Integer>;
+
+       function TextToWordSequence(text    : String ;
+                                   filters : String = '!\"#$%&()*+,-./:;<=>?@[\\]^_`{|}~'+#9#13#10;
+                                   lower   : Boolean= true;
+                                   split   : String= ' '): TArray<string>;
   end;
 
 implementation
@@ -84,6 +129,142 @@ begin
     else                          Parameters.Add( TPair<String,TValue>.Create('seed', TPythonObject.None ));
 
     Result :=  TNDArray.Create( InvokeStaticMethod(caller,'skipgrams',Parameters) )
+end;
+
+{ TTokenizer }
+
+constructor TTokenizer.Create;
+begin
+    inherited create;
+
+    caller := GetKerasClassIstance('preprocessing.text');
+end;
+
+constructor TTokenizer.Create(num_words: PInteger; filters: string; lower: Boolean; split: string; char_level: Boolean;
+                                oov_token: PInteger; document_count: Integer);
+begin
+    Parameters.Clear;
+
+    if num_words <> nil then Parameters.Add( TPair<String,TValue>.Create('num_words',num_words^))
+    else                     Parameters.Add( TPair<String,TValue>.Create('num_words', TPythonObject.None ));
+
+    Parameters.Add( TPair<String,TValue>.Create('filters',filters) );
+    Parameters.Add( TPair<String,TValue>.Create('lower',lower) );
+    Parameters.Add( TPair<String,TValue>.Create('split',split) );
+    Parameters.Add( TPair<String,TValue>.Create('char_level',char_level) );
+
+    if oov_token <> nil then Parameters.Add( TPair<String,TValue>.Create('oov_token',oov_token^))
+    else                     Parameters.Add( TPair<String,TValue>.Create('oov_token', TPythonObject.None ));
+
+    Parameters.Add( TPair<String,TValue>.Create('document_count',document_count) );
+
+    PyInstance :=  InvokeStaticMethod(caller,'Tokenizer',Parameters)
+end;
+
+procedure TTokenizer.FitOnSequences(sequences: TArray<TSequence>);
+begin
+    Parameters.Clear;
+
+    Parameters.Add( TPair<String,TValue>.Create('sequences',TValue.FromArray<TSequence>(sequences)) );
+
+    InvokeStaticMethod(caller,'fit_on_sequences',Parameters)
+end;
+
+procedure TTokenizer.FitOnTexts(texts: TArray<string>);
+begin
+    Parameters.Clear;
+
+    Parameters.Add( TPair<String,TValue>.Create('texts',TValue.FromArray<string>(texts)) );
+
+    InvokeStaticMethod(caller,'fit_on_texts',Parameters)
+end;
+
+function TTokenizer.SequencesToTexts(sequences: TArray<TSequence>): TArray<string>;
+begin
+    Parameters.Clear;
+
+    Parameters.Add( TPair<String,TValue>.Create('sequences',TValue.FromArray<TSequence>(sequences)) );
+
+    Result := InvokeStaticMethod(caller,'sequences_to_texts',Parameters).AsArrayofString;
+end;
+
+function TTokenizer.TextsToMatrix(texts: TArray<string>; mode: string): TMatrix;
+var
+  atmp: TPythonObject;
+begin
+    Parameters.Clear;
+
+    Parameters.Add( TPair<String,TValue>.Create('texts',TValue.FromArray<string>(texts)) );
+    Parameters.Add( TPair<String,TValue>.Create('mode',mode) );
+
+    atmp := InvokeStaticMethod(caller,'texts_to_matrix',Parameters) ;
+
+    Result := TMatrix.Create( atmp.Handle  );
+
+end;
+
+function TTokenizer.TextsToSequences(texts: TArray<string>): TArray<TSequence>;
+var
+  atmp: TArray<TPythonObject>;
+  i   : Integer;
+begin
+    Parameters.Clear;
+
+    Parameters.Add( TPair<String,TValue>.Create('texts',TValue.FromArray<string>(texts)) );
+
+    atmp := InvokeStaticMethod(caller,'texts_to_sequences',Parameters).AsArrayofPyObj ;
+
+    for i := 0 to High(atmp) do
+      Result := Result + [ TSequence.Create( atmp[i].Handle )  ];
+end;
+
+{ TTextUtil }
+
+constructor TTextUtil.Create;
+begin
+    inherited create;
+
+    caller := GetKerasClassIstance('preprocessing.text');
+end;
+
+function TTextUtil.HashingTrick(text: string; n: Integer; hash_function, filters: string; lower: Boolean;
+                                      split: string): TArray<Integer>;
+begin
+    Parameters.Clear;
+
+    Parameters.Add( TPair<String,TValue>.Create('text',text) );
+    Parameters.Add( TPair<String,TValue>.Create('n',n) );
+    Parameters.Add( TPair<String,TValue>.Create('hash_function',hash_function) );
+    Parameters.Add( TPair<String,TValue>.Create('filters',filters) );
+    Parameters.Add( TPair<String,TValue>.Create('lower',lower) );
+    Parameters.Add( TPair<String,TValue>.Create('split',split) );
+
+    Result := InvokeStaticMethod(caller,'hashing_trick',Parameters).AsArrayofInt;
+end;
+
+function TTextUtil.OneHot(text: string; n: Integer; filters: string; lower: Boolean; split: string): TArray2D<Integer>;
+begin
+    Parameters.Clear;
+
+    Parameters.Add( TPair<String,TValue>.Create('text',text) );
+    Parameters.Add( TPair<String,TValue>.Create('n',n) );
+    Parameters.Add( TPair<String,TValue>.Create('filters',filters) );
+    Parameters.Add( TPair<String,TValue>.Create('lower',lower) );
+    Parameters.Add( TPair<String,TValue>.Create('split',split) );
+
+    InvokeStaticMethod(caller,'one_hot',Parameters);
+end;
+
+function TTextUtil.TextToWordSequence(text: String; filters: String; lower: Boolean; split: String): TArray<string>;
+begin
+    Parameters.Clear;
+    Result := [];
+    Parameters.Add( TPair<String,TValue>.Create('text',AnsiString( text )) );
+    Parameters.Add( TPair<String,TValue>.Create('filters',filters) );
+    Parameters.Add( TPair<String,TValue>.Create('lower',lower) );
+    Parameters.Add( TPair<String,TValue>.Create('split',split) );
+
+    Result := InvokeStaticMethod(caller,'text_to_word_sequence',Parameters).AsArrayofString;
 end;
 
 end.

@@ -107,11 +107,11 @@ type
        procedure SetWeights(weights: TArray<TNDarray>);
        procedure LoadWeight(path: string);
        procedure Summary(line_length: PInteger = nil; positions : TArray<Double>= nil) ;
-       function  LoadModel(filepath: string; custom_objects: TDictionary<string, string> = nil; compile : Boolean = true): TBaseModel;
        function  ModelFromYaml(Yaml_string:string): TBaseModel;
        procedure SaveOnnx(filePath: string);
        procedure SaveTensorflowJSFormat(artifacts_dir: string; quantize : Boolean= false);
 
+       class function  LoadModel(filepath: string; custom_objects: TDictionary<string, string> = nil; compile : Boolean = true): TBaseModel;
        class function  ModelFromJson(json_string: string): TBaseModel;
   end;
 
@@ -438,24 +438,31 @@ begin
     Result := THistory.Create(py);
 end;
 
-function TBaseModel.LoadModel(filepath: string; custom_objects: TDictionary<string, string>; compile: Boolean): TBaseModel;
+class function TBaseModel.LoadModel(filepath: string; custom_objects: TDictionary<string, string>; compile: Boolean): TBaseModel;
 var
   model: TBaseModel;
   dict : TPyDict;
   item : TPair<string, string>;
+  args : TList< TPair<String,TValue> > ;
 begin
     model := TBaseModel.Create;
 
-    dict := TPyDict.Create;
-    for item in custom_objects do
-          dict[item.Key] := ToPython(Item.Value)  ;
+    if custom_objects <> nil then
+    begin
+        dict := TPyDict.Create;
+        for item in custom_objects do
+              dict[item.Key] := ToPython(Item.Value)  ;
+    end;
 
-    Parameters.Clear;
-    Parameters.Add( TPair<String,TValue>.Create('filepath',filepath));
-    Parameters.Add( TPair<String,TValue>.Create('custom_objects',ToDict(custom_objects)));
+    args := TList< TPair<String,TValue> >.Create;
+
+    args.Add( TPair<String,TValue>.Create('filepath',filepath));
+
+    if custom_objects <> nil then args.Add( TPair<String,TValue>.Create('custom_objects',ToDict(custom_objects)))
+    else                          args.Add( TPair<String,TValue>.Create('custom_objects', TPythonObject.None ));
 
     model.PyInstance := GetKerasClassIstance('models');
-    model.PyInstance := InvokeStaticMethod(model.PyInstance,'load_model',Parameters) ;
+    model.PyInstance := InvokeStaticMethod(model.PyInstance,'load_model',args) ;
 
     Result := model;
 

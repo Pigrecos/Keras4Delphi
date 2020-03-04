@@ -37,6 +37,7 @@ type
     procedure MNIST_CNN;
     procedure SentimentClassification;
     procedure SentimentClassificationLSTM;
+    procedure Predict(text: string);
     { Private declarations }
   public
     { Public declarations }
@@ -137,17 +138,19 @@ end;
 procedure TfrmMain.btn1Click(Sender: TObject);
 begin
     //============== Esempi ======================//
-    NumPyTest;
+   // NumPyTest;
 
     // keras test
-    Test1;
-    esempio_XOR;
-    MergeExample ;
-    ImplementCallback;
-    MNIST_CNN ;
-    // not work tested!!!!!!
+    //Test1;
+    //esempio_XOR;
+    //MergeExample ;
+    //ImplementCallback;
+    //MNIST_CNN ;
     //SentimentClassification;
-    SentimentClassificationLSTM;
+    Predict('I hate you');
+    Predict('I care about you');
+
+    //SentimentClassificationLSTM;
 end;
 
 procedure TfrmMain.NumPyTest;
@@ -478,49 +481,41 @@ end;
 procedure TfrmMain.SentimentClassification;
 var
   res      : TArray<TNDArray>;
+
 begin
-    var top_words : Integer := 5000;
-    var max_words : Integer := 500;
-    var batch_size : Integer:= 128;
+    // Embedding
+    var max_features  := 20000;
+    var maxlen        := 500;
+    var embedding_size:= 32;
 
-    //Load IMDb dataset
-    redtOutput.Lines.Add('Loading data...');
-    res := TIMDB.load_data;
-    var x_train, y_train ,x_test, y_test,X,Y,tmp : TNDArray;
-
-    x_train := res[0];
-    y_train := res[1];
-    x_test  := res[2];
-    y_test  := res[3];
-
-    tmp := nil;
-    X := vNumpy.concatenate([ x_train, x_test ],  0,tmp);
-    Y := vNumpy.concatenate([ y_train, y_test ],0,tmp);
-
-    redtOutput.Lines.Add('Shape of X: ' + X.shape.ToString);
-    redtOutput.Lines.Add('Shape of Y: ' + Y.shape.ToString);
-
-    var hstack : TNDArray := vNumpy.hstack([ X ]) ;
-    redtOutput.Lines.Add('Number of words: '+ hstack.shape.ToString );
+    // Convolution
+    var filters      := 32;
+    var kernel_size  := 3;
+    var pool_size    := 2;
 
     // Load the dataset but only keep the top n words, zero the rest
-    res := TIMDB.load_data(@top_words);
+    res := TIMDB.load_data(@max_features);
 
+    var x_train, y_train ,x_test, y_test: TNDArray;
     x_train := res[0];
     y_train := res[1];
     x_test  := res[2];
     y_test  := res[3];
+    redtOutput.Lines.Add('x_train shape: ' + x_train.shape.ToString);
+    redtOutput.Lines.Add('x_test shape: '  + x_test.shape.ToString);
 
     var tseq : TSequenceUtil := TSequenceUtil.Create;
-    x_train := tseq.PadSequences(x_train, @max_words);
-    x_test  := tseq.PadSequences(x_test,  @max_words);
+    x_train := tseq.PadSequences(x_train, @maxlen);
+    x_test  := tseq.PadSequences(x_test,  @maxlen);
+    redtOutput.Lines.Add('x_train shape: ' + x_train.shape.ToString);
+    redtOutput.Lines.Add('x_test shape: '  + x_test.shape.ToString);
 
     // Create model
     var model : TSequential := TSequential.Create;
 
-    model.Add( TEmbedding.Create(top_words, 32, @max_words));
-    model.Add( TConv1D.Create(32, 3, 'same', 'relu'));
-    model.Add( TMaxPooling1D.Create(2));
+    model.Add( TEmbedding.Create(max_features, embedding_size, @maxlen));
+    model.Add( TConv1D.Create(filters, kernel_size, 'same', 'relu'));
+    model.Add( TMaxPooling1D.Create(pool_size));
     model.Add( TFlatten.Create);
     model.Add( TDense.Create(250, 'relu'));
     model.Add( TDense.Create(1, 'sigmoid'));
@@ -530,7 +525,7 @@ begin
     model.Summary;
 
     //Train the model
-    model.Fit(x_train, y_train, @batch_size, 10, 2,[ x_test, y_test ]);
+    model.Fit(x_train, y_train, @embedding_size, 10, 2,[ x_test, y_test ]);
 
     //Score the model for performance
     var score : TArray<Double> := model.Evaluate(x_test, y_test, nil, 0);
@@ -542,6 +537,41 @@ begin
     model.Save('model.h5');
     // Save it to Tensorflow JS format and we will test it in browser.
     model.SaveTensorflowJSFormat('./');
+end;
+
+procedure TfrmMain.Predict(text: string);
+var
+  model   : TBaseModel;
+  indexes : TDictionary<string, Integer>;
+  item    : TPair<string, Integer>;
+  words   : TArray<string>;
+  w,res   : string;
+  tokens  : TArray<Double>;
+  TextUtil: TTextUtil;
+begin
+    model := TSequential.LoadModel('model.h5') ;
+
+    indexes := TIMDB.GetWordIndex;
+
+    TextUtil := TTextUtil.Create;
+    Words    := TextUtil.TextToWordSequence(text);
+    for w in words do
+     tokens := tokens + [ indexes[w] ];
+
+    var x : TNDArray := TNumPy.npArray<Double>(tokens);
+    x := x.reshape([1,x.shape[0]]);
+    var tseq : TSequenceUtil := TSequenceUtil.Create;
+    var maxlen : Integer := 500;
+    x := tseq.PadSequences(x, @maxlen);
+    var y : TNDArray := model.Predict(x);
+
+    var binary := Round(y.asscalar<double>);
+
+    if binary = 0 then res := 'Negative'
+    else               res := 'Positive' ;
+
+    redtOutput.Lines.Add(Format('Sentiment for "{%s} : {%s}"',[ text, res]));
+
 end;
 
 procedure TfrmMain.FormShow(Sender: TObject);
