@@ -147,6 +147,62 @@ Reached 98% accuracy within 3 epoches.
 
 ![](https://github.com/Pigrecos/Keras4Delphi/blob/master/Images/MNIST.jpg)
 
+
+## Sentiment classification LSTM
+
+Python example taken from: //https://keras.io/examples/imdb_lstm/
+
+```pascal
+var
+  res      : TArray<TNDArray>;
+begin
+    var max_features: Integer := 20000;
+    // cut texts after this number of words (among top max_features most common words)
+    var maxlen     : Integer := 80;
+    var batch_size : Integer := 32;
+
+    redtOutput.Lines.Add('Loading data...');
+    res := TIMDB.load_data(@max_features);
+    var x_train, y_train ,x_test, y_test,X,Y,tmp : TNDArray;
+
+    x_train := res[0];
+    y_train := res[1];
+    x_test  := res[2];
+    y_test  := res[3];
+
+    redtOutput.Lines.Add('train sequences: ' + x_train.shape.ToString);
+    redtOutput.Lines.Add('test sequences: '  + x_test.shape.ToString);
+
+    redtOutput.Lines.Add('Pad sequences (samples x time)');
+    var tseq : TSequenceUtil := TSequenceUtil.Create;
+    x_train := tseq.PadSequences(x_train, @maxlen);
+    x_test  := tseq.PadSequences(x_test,  @maxlen);
+    redtOutput.Lines.Add('x_train shape: ' + x_train.shape.ToString);
+    redtOutput.Lines.Add('x_test shape: '  + x_test.shape.ToString);
+
+    redtOutput.Lines.Add('Build model...');
+    var model : TSequential := TSequential.Create;
+    model.Add( TEmbedding.Create(max_features, 128));
+    model.Add( TLSTM.Create(128, 0.2, 0.2));
+    model.Add( TDense.Create(1, 'sigmoid'));
+
+    //try using different optimizers and different optimizer configs
+    model.Compile(TStringOrInstance.Create('adam'), 'binary_crossentropy', [ 'accuracy' ]);
+    model.Summary;
+
+    redtOutput.Lines.Add('Train...');
+    model.Fit(x_train, y_train, @batch_size, 15, 1,[ x_test, y_test ]);
+
+    //Score the model for performance
+    var score : TArray<Double> := model.Evaluate(x_test, y_test, @batch_size);
+
+    redtOutput.Lines.Add('Test score: '   + FloatToStr(score[0]));
+    redtOutput.Lines.Add('Test accuracy:'+ FloatToStr(score[1]));
+
+    // Save the model to HDF5 format which can be loaded later or ported to other application
+    model.Save('model.h5');
+```
+
 # Notes
    welcome collaborative testing and improvement of source code. I have little free time
    

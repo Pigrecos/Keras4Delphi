@@ -340,7 +340,8 @@ type
                                 seed      : Integer= 113;
                                 start_char: Integer= 1;
                                 oov_char  : Integer= 2;
-                                index_from: Integer= 3): TArray<TNDArray>;
+                                index_from: Integer= 3): TArray<TNDArray>; overload;
+       class function load_data(num_words : PInteger): TArray<TNDArray>; overload;
   end;
 
   TReuters = class(TBase)
@@ -602,7 +603,7 @@ begin
 
         if (data.ParentInfo^.Name = 'TPythonObject') or (data.ParentInfo^.Name = 'TNDArray') or (data.ParentInfo^.Name = 'TPySequence')then
            Result := value.AsType<TPythonObject>
-        else if (data.ParentInfo^.Name = 'TBase') or (data.ParentInfo^.Name = 'TBaseLayer')  or (data.ParentInfo^.Name = 'TCallback') then
+        else if (data.ParentInfo^.Name = 'TBase') or (data.ParentInfo^.Name = 'TBaseLayer')  or (data.ParentInfo^.Name = 'TCallback') or (data.ParentInfo^.Name = 'TRNN')then
            Result := value.AsType<TBase>.PyInstance
         // TList<System.string>
         else if Info.Name = 'TList<System.string>' then
@@ -1882,6 +1883,25 @@ begin
     args.Add( TPair<String,TValue>.Create('start_char',start_char) );
     args.Add( TPair<String,TValue>.Create('oov_char',oov_char) );
     args.Add( TPair<String,TValue>.Create('index_from',index_from) );
+
+    py  := InvokeStaticMethod( GetKerasClassIstance('datasets.imdb') ,'load_data',args);
+
+    Result := TTupleSolver.TupleToList(py);
+
+end;
+
+class function TIMDB.load_data(num_words: PInteger): TArray<TNDArray>;
+var
+    py     : TPythonObject;
+    path   : string;
+begin
+    Create;
+
+    var args: TList< TPair<String,TValue> > := TList< TPair<String,TValue> >.Create;
+
+    path :='imdb.npz' ;
+    args.Add( TPair<String,TValue>.Create('path',path) );
+    args.Add( TPair<String,TValue>.Create('num_words',num_words^) );
 
     py  := InvokeStaticMethod( GetKerasClassIstance('datasets.imdb') ,'load_data',args);
 

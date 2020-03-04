@@ -41,6 +41,12 @@ type
                     initial_epoch    : Integer = 0;
                     steps_per_epoch  : PInteger = nil;
                     validation_steps : PInteger= nil):THistory;overload;
+       function Fit(x                : TNDarray;
+                    y                : TNDarray;
+                    batch_size       : PInteger ;
+                    epochs           : Integer;
+                    verbose          : Integer;
+                    validation_data  : TArray<TNDarray> ):THistory;overload;
        function Evaluate(x             : TNDarray;
                          y             : TNDarray;
                          batch_size    : PInteger = nil;
@@ -371,6 +377,30 @@ begin
     Result := THistory.Create(py);
 
 
+end;
+
+function TBaseModel.Fit(x, y: TNDarray; batch_size: PInteger; epochs, verbose: Integer; validation_data: TArray<TNDarray>): THistory;
+var
+  py : TPythonObject;
+begin
+    Parameters.Clear;
+
+    Parameters.Add( TPair<String,TValue>.Create('x',x));
+    Parameters.Add( TPair<String,TValue>.Create('y',y));
+
+    if batch_size <> nil then  Parameters.Add( TPair<String,TValue>.Create('batch_size',batch_size^))
+    else                       Parameters.Add( TPair<String,TValue>.Create('batch_size', TPythonObject.None ));
+
+    Parameters.Add( TPair<String,TValue>.Create('epochs',epochs));
+    Parameters.Add( TPair<String,TValue>.Create('verbose',verbose));
+
+
+    if (validation_data <> nil) then Parameters.Add( TPair<String,TValue>.Create('validation_data', TValue.FromArray<TNDarray>(validation_data)))
+    else                             Parameters.Add( TPair<String,TValue>.Create('validation_data', TPythonObject.None ));
+
+    py := InvokeMethod('fit', Parameters);
+
+    Result := THistory.Create(py);
 end;
 
 function TBaseModel.FitGenerator(generator: TSequence; steps_per_epoch: PInteger; epochs, verbose: Integer;

@@ -32,7 +32,6 @@ object frmMain: TfrmMain
     Height = 43
     Align = alTop
     TabOrder = 0
-    ExplicitWidth = 835
     object btn1: TButton
       Left = 16
       Top = 12
@@ -82,8 +81,6 @@ object frmMain: TfrmMain
     WordWrap = False
     Zoom = 100
     OnChange = redtOutputChange
-    ExplicitTop = 256
-    ExplicitWidth = 835
   end
   object PyIOCom: TPythonGUIInputOutput
     UnicodeIO = True

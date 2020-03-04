@@ -158,7 +158,11 @@ type
                           activity_regularizer: string = '';
                           kernel_constraint   : string = '';
                           bias_constraint     : string = '';
-                          input_shape         : PTnp_Shape = nil);
+                          input_shape         : PTnp_Shape = nil); overload;
+       constructor Create(filters             : Integer;
+                          kernel_size         : Integer;
+                          padding             : string;
+                          activation          : string); overload;
   end;
 
   TConv2D = class(TBaseLayer)
@@ -377,7 +381,11 @@ type
                           embeddings_constraint : string = '';
                           mask_zero             : Boolean = false;
                           input_length          : PInteger = nil;
-                          input_shape           : PTnp_Shape = nil);
+                          input_shape           : PTnp_Shape = nil); overload;
+
+       constructor Create(input_dim             : Integer;
+                          output_dim            : Integer;
+                          input_length          : PInteger);overload;
   end;
 
   //LocallyConnected
@@ -699,7 +707,11 @@ type
                           return_state         : Boolean= false;
                           go_backwards         : Boolean= false;
                           stateful             : Boolean= false;
-                          unroll               : Boolean= false);
+                          unroll               : Boolean= false);overload;
+
+       constructor Create(units                : Integer;
+                          dropout              : Double;
+                          recurrent_dropout    : Double);overload;
   end;
 
   TCuDNNLSTM = class(TRNN)
@@ -1209,6 +1221,19 @@ begin
 
     if input_shape <> nil then Parameters.Add( TPair<String,TValue>.Create('input_shape',TValue.FromShape(input_shape^)))
     else                       Parameters.Add( TPair<String,TValue>.Create('input_shape', TPythonObject.None ));
+
+    PyInstance := GetKerasClassIstance('layers.Conv1D');
+    Init;
+end;
+
+constructor TConv1D.Create(filters, kernel_size: Integer; padding, activation: string);
+begin
+    inherited Create;
+
+    Parameters.Add( TPair<String,TValue>.Create('filters',filters));
+    Parameters.Add( TPair<String,TValue>.Create('kernel_size',kernel_size));
+    Parameters.Add( TPair<String,TValue>.Create('padding',padding));
+    Parameters.Add( TPair<String,TValue>.Create('activation',activation));
 
     PyInstance := GetKerasClassIstance('layers.Conv1D');
     Init;
@@ -1763,6 +1788,20 @@ begin
     if input_shape <> nil then Parameters.Add( TPair<String,TValue>.Create('input_shape',TValue.FromShape(input_shape^)))
     else                       Parameters.Add( TPair<String,TValue>.Create('input_shape', TPythonObject.None ));
 
+
+    PyInstance := GetKerasClassIstance('layers.Embedding');
+    Init;
+end;
+
+constructor TEmbedding.Create(input_dim, output_dim: Integer; input_length: PInteger);
+begin
+    inherited Create;
+
+    Parameters.Add( TPair<String,TValue>.Create('input_dim',input_dim));
+    Parameters.Add( TPair<String,TValue>.Create('output_dim',output_dim));
+
+    if input_length <> nil then Parameters.Add( TPair<String,TValue>.Create('input_length',input_length^))
+    else                        Parameters.Add( TPair<String,TValue>.Create('input_length', TPythonObject.None ));
 
     PyInstance := GetKerasClassIstance('layers.Embedding');
     Init;
@@ -2396,6 +2435,18 @@ begin
     Parameters.Add( TPair<String,TValue>.Create('go_backwards',go_backwards));
     Parameters.Add( TPair<String,TValue>.Create('stateful',stateful));
     Parameters.Add( TPair<String,TValue>.Create('unroll',unroll));
+
+    PyInstance := GetKerasClassIstance('layers.LSTM');
+    Init;
+end;
+
+constructor TLSTM.Create(units: Integer; dropout, recurrent_dropout: Double);
+begin
+    Parameters := TList< TPair<String,TValue> >.Create;
+
+    Parameters.Add( TPair<String,TValue>.Create('units',units));
+    Parameters.Add( TPair<String,TValue>.Create('dropout',dropout));
+    Parameters.Add( TPair<String,TValue>.Create('recurrent_dropout',recurrent_dropout));
 
     PyInstance := GetKerasClassIstance('layers.LSTM');
     Init;

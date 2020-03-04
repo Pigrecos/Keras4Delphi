@@ -11,7 +11,8 @@ uses
   Keras in '..\src\Keras.pas',
   Keras.Models in '..\src\Keras.Models.pas',
   utils in '..\src\utils.pas',
-  Keras.Layers in '..\src\Keras.Layers.pas';
+  Keras.Layers in '..\src\Keras.Layers.pas',
+  Keras.PreProcessing in '..\src\Keras.PreProcessing.pas';
 
 {$R *.res}
 

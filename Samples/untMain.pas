@@ -35,6 +35,8 @@ type
     procedure NumPyTest;
     procedure Test1;
     procedure MNIST_CNN;
+    procedure SentimentClassification;
+    procedure SentimentClassificationLSTM;
     { Private declarations }
   public
     { Public declarations }
@@ -49,7 +51,8 @@ implementation
           utils,
           Keras,
           Keras.Layers,
-          Keras.Models;
+          Keras.Models,
+          Keras.PreProcessing;
 
 {$R *.dfm}
 
@@ -141,7 +144,10 @@ begin
     esempio_XOR;
     MergeExample ;
     ImplementCallback;
-    MNIST_CNN
+    MNIST_CNN ;
+    // not work tested!!!!!!
+    //SentimentClassification;
+    SentimentClassificationLSTM;
 end;
 
 procedure TfrmMain.NumPyTest;
@@ -327,9 +333,9 @@ begin
     //Compile and train
     model.Compile(TStringOrInstance.Create( TAdam.Create ), 'binary_crossentropy', [ 'accuracy' ]);
     var batch_size: Integer  := 2;
-    var history : THistory := model.Fit(x, y, @batch_size, 10, 1, [ callback{lossHistory} ]);
+    var history : THistory := model.Fit(x, y, @batch_size, 10, 1, [ callback,lossHistory ]);
 
-   // var customLosses: TArray<Double> := lossHistory.GetDoubleArray('losses');
+    var customLosses: TArray<Double> := lossHistory.GetDoubleArray('losses');
 
 end;
 
@@ -409,6 +415,128 @@ begin
 
     redtOutput.Lines.Add('Test loss: '   + FloatToStr(score[0]));
     redtOutput.Lines.Add('Test accuracy:'+ FloatToStr(score[1]));
+
+    // Save the model to HDF5 format which can be loaded later or ported to other application
+    model.Save('model.h5');
+    // Save it to Tensorflow JS format and we will test it in browser.
+    model.SaveTensorflowJSFormat('./');
+end;
+
+//https://keras.io/examples/imdb_lstm/
+procedure TfrmMain.SentimentClassificationLSTM;
+var
+  res      : TArray<TNDArray>;
+begin
+    var max_features: Integer := 20000;
+    // cut texts after this number of words (among top max_features most common words)
+    var maxlen     : Integer := 80;
+    var batch_size : Integer := 32;
+
+    redtOutput.Lines.Add('Loading data...');
+    res := TIMDB.load_data(@max_features);
+    var x_train, y_train ,x_test, y_test,X,Y,tmp : TNDArray;
+
+    x_train := res[0];
+    y_train := res[1];
+    x_test  := res[2];
+    y_test  := res[3];
+
+    redtOutput.Lines.Add('train sequences: ' + x_train.shape.ToString);
+    redtOutput.Lines.Add('test sequences: '  + x_test.shape.ToString);
+
+    redtOutput.Lines.Add('Pad sequences (samples x time)');
+    var tseq : TSequenceUtil := TSequenceUtil.Create;
+    x_train := tseq.PadSequences(x_train, @maxlen);
+    x_test  := tseq.PadSequences(x_test,  @maxlen);
+    redtOutput.Lines.Add('x_train shape: ' + x_train.shape.ToString);
+    redtOutput.Lines.Add('x_test shape: '  + x_test.shape.ToString);
+
+    redtOutput.Lines.Add('Build model...');
+    var model : TSequential := TSequential.Create;
+    model.Add( TEmbedding.Create(max_features, 128));
+    model.Add( TLSTM.Create(128, 0.2, 0.2));
+    model.Add( TDense.Create(1, 'sigmoid'));
+
+    //try using different optimizers and different optimizer configs
+    model.Compile(TStringOrInstance.Create('adam'), 'binary_crossentropy', [ 'accuracy' ]);
+    model.Summary;
+
+    redtOutput.Lines.Add('Train...');
+    model.Fit(x_train, y_train, @batch_size, 15, 1,[ x_test, y_test ]);
+
+    //Score the model for performance
+    var score : TArray<Double> := model.Evaluate(x_test, y_test, @batch_size);
+
+    redtOutput.Lines.Add('Test score: '   + FloatToStr(score[0]));
+    redtOutput.Lines.Add('Test accuracy:'+ FloatToStr(score[1]));
+
+    // Save the model to HDF5 format which can be loaded later or ported to other application
+    model.Save('model.h5');
+
+end;
+
+procedure TfrmMain.SentimentClassification;
+var
+  res      : TArray<TNDArray>;
+begin
+    var top_words : Integer := 5000;
+    var max_words : Integer := 500;
+    var batch_size : Integer:= 128;
+
+    //Load IMDb dataset
+    redtOutput.Lines.Add('Loading data...');
+    res := TIMDB.load_data;
+    var x_train, y_train ,x_test, y_test,X,Y,tmp : TNDArray;
+
+    x_train := res[0];
+    y_train := res[1];
+    x_test  := res[2];
+    y_test  := res[3];
+
+    tmp := nil;
+    X := vNumpy.concatenate([ x_train, x_test ],  0,tmp);
+    Y := vNumpy.concatenate([ y_train, y_test ],0,tmp);
+
+    redtOutput.Lines.Add('Shape of X: ' + X.shape.ToString);
+    redtOutput.Lines.Add('Shape of Y: ' + Y.shape.ToString);
+
+    var hstack : TNDArray := vNumpy.hstack([ X ]) ;
+    redtOutput.Lines.Add('Number of words: '+ hstack.shape.ToString );
+
+    // Load the dataset but only keep the top n words, zero the rest
+    res := TIMDB.load_data(@top_words);
+
+    x_train := res[0];
+    y_train := res[1];
+    x_test  := res[2];
+    y_test  := res[3];
+
+    var tseq : TSequenceUtil := TSequenceUtil.Create;
+    x_train := tseq.PadSequences(x_train, @max_words);
+    x_test  := tseq.PadSequences(x_test,  @max_words);
+
+    // Create model
+    var model : TSequential := TSequential.Create;
+
+    model.Add( TEmbedding.Create(top_words, 32, @max_words));
+    model.Add( TConv1D.Create(32, 3, 'same', 'relu'));
+    model.Add( TMaxPooling1D.Create(2));
+    model.Add( TFlatten.Create);
+    model.Add( TDense.Create(250, 'relu'));
+    model.Add( TDense.Create(1, 'sigmoid'));
+
+    //Compile with loss, metrics and optimizer
+    model.Compile(TStringOrInstance.Create('adam'), 'binary_crossentropy', [ 'accuracy' ]);
+    model.Summary;
+
+    //Train the model
+    model.Fit(x_train, y_train, @batch_size, 10, 2,[ x_test, y_test ]);
+
+    //Score the model for performance
+    var score : TArray<Double> := model.Evaluate(x_test, y_test, nil, 0);
+
+    redtOutput.Lines.Add('Test loss: '   + FloatToStr(score[0]));
+    redtOutput.Lines.Add('Test accuracy:'+ FloatToStr(score[1]*100));
 
     // Save the model to HDF5 format which can be loaded later or ported to other application
     model.Save('model.h5');
