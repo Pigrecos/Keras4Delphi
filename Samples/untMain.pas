@@ -138,19 +138,19 @@ end;
 procedure TfrmMain.btn1Click(Sender: TObject);
 begin
     //============== Esempi ======================//
-   // NumPyTest;
+    NumPyTest;
 
     // keras test
-    //Test1;
-    //esempio_XOR;
-    //MergeExample ;
-    //ImplementCallback;
-    //MNIST_CNN ;
-    //SentimentClassification;
+    Test1;
+    esempio_XOR;
+    MergeExample ;
+    ImplementCallback;
+    MNIST_CNN ;
+    SentimentClassification;
     Predict('I hate you');
     Predict('I care about you');
 
-    //SentimentClassificationLSTM;
+    SentimentClassificationLSTM;
 end;
 
 procedure TfrmMain.NumPyTest;
