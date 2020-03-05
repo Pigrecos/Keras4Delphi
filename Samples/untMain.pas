@@ -11,7 +11,7 @@ uses
   np.Base,
   np.Api,
 
-  Models,
+  np.Models,
   NDArray.Api;
 
 type
@@ -49,7 +49,7 @@ var
 
 implementation
      uses System.Generics.Collections, System.Diagnostics, System.IOUtils, Jpeg,MethodCallBack,
-          utils,
+          np.Utils,
           Keras,
           Keras.Layers,
           Keras.Models,

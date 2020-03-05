@@ -18,8 +18,8 @@ interface
          PythonEngine,
          Python.Utils,
 
-         Models,
-         utils,
+         np.Models,
+         np.Utils,
          np.Base;
 
 type

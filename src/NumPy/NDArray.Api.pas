@@ -14,7 +14,7 @@ interface
        PythonEngine,
        Python.Utils,
 
-       Models;
+       np.Models;
 
 const
   null = 'null';
@@ -310,7 +310,7 @@ type
 
 implementation
  uses
-    np.Base,utils;
+    np.Base,np.Utils;
 
 Function  TNDarrayGeneral.item<T>(args: TArray<Integer>): T;
 var

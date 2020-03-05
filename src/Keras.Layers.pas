@@ -1,7 +1,7 @@
 unit Keras.Layers;
 
 interface
-   uses System.Generics.Collections, System.Rtti, utils,PythonEngine, Python.Utils, Models, Keras;
+   uses System.Generics.Collections, System.Rtti, np.Utils,PythonEngine, Python.Utils, np.Models, Keras;
 
 type
   TBaseLayer = class;

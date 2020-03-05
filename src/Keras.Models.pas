@@ -10,7 +10,7 @@ unit Keras.Models;
 
 interface
    uses  System.SysUtils, System.Generics.Collections,
-         PythonEngine, Keras,Models,Python.Utils,
+         PythonEngine, Keras,np.Models,Python.Utils,
          Keras.Layers;
 
 type
@@ -148,7 +148,7 @@ type
   end;
 
 implementation
-    uses Winapi.Windows, System.IOUtils, System.Rtti,utils,np.Base, np.Api;
+    uses Winapi.Windows, System.IOUtils, System.Rtti,np.Utils,np.Base, np.Api;
 
 { TUtil }
 

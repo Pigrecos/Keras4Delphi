@@ -2,9 +2,9 @@ unit Keras.PreProcessing;
 
 interface
    uses  System.SysUtils, System.Generics.Collections,
-         PythonEngine, Keras,Models,Python.Utils,
+         PythonEngine, Keras,np.Models ,Python.Utils,
          Keras.Layers,
-         utils;
+         np.Utils;
 
 type
   // Sequence
@@ -72,6 +72,22 @@ type
                                    filters : String = '!\"#$%&()*+,-./:;<=>?@[\\]^_`{|}~'+#9#13#10;
                                    lower   : Boolean= true;
                                    split   : String= ' '): TArray<string>;
+  end;
+
+  // SequenceProcessing
+  TTimeseriesGenerator = class(TBase)
+     public
+       constructor Create(data          : TNDArray;
+                          targets       : TNDArray;
+                          length        : Integer;
+                          sampling_rate : Integer= 1;
+                          stride        : Integer = 1;
+                          start_index   : Integer= 0;
+                          end_index     : PInteger= nil;
+                          shuffle       : Boolean= false;
+                          reverse       : Boolean= false;
+                          batch_size    : Integer= 128);
+
   end;
 
 implementation
@@ -265,6 +281,31 @@ begin
     Parameters.Add( TPair<String,TValue>.Create('split',split) );
 
     Result := InvokeStaticMethod(caller,'text_to_word_sequence',Parameters).AsArrayofString;
+end;
+
+{ TTimeseriesGenerator }
+
+constructor TTimeseriesGenerator.Create(data, targets: TNDArray; length, sampling_rate, stride, start_index: Integer;
+                                                   end_index: PInteger; shuffle, reverse: Boolean; batch_size: Integer);
+begin
+    inherited Create;
+
+    Parameters.Add( TPair<String,TValue>.Create('data',data) );
+    Parameters.Add( TPair<String,TValue>.Create('targets',targets) );
+    Parameters.Add( TPair<String,TValue>.Create('length',length) );
+    Parameters.Add( TPair<String,TValue>.Create('sampling_rate',sampling_rate) );
+    Parameters.Add( TPair<String,TValue>.Create('stride',stride) );
+    Parameters.Add( TPair<String,TValue>.Create('start_index',start_index) );
+
+    if end_index <> nil then Parameters.Add( TPair<String,TValue>.Create('end_index',end_index^))
+    else                     Parameters.Add( TPair<String,TValue>.Create('end_index', TPythonObject.None ));
+
+    Parameters.Add( TPair<String,TValue>.Create('shuffle',shuffle) );
+    Parameters.Add( TPair<String,TValue>.Create('reverse',reverse) );
+    Parameters.Add( TPair<String,TValue>.Create('batch_size',batch_size) );
+
+    PyInstance := GetKerasClassIstance('preprocessing.sequence.TimeseriesGenerator');
+    Init;
 end;
 
 end.

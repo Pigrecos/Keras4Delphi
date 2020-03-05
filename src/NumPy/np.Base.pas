@@ -16,8 +16,8 @@ interface
         PythonEngine,
         Python.Utils,
 
-        utils,
-        Models;
+        np.Utils,
+        np.Models;
 
 type
   Constants = (inf, neg_inf) ;

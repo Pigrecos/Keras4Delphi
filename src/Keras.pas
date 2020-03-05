@@ -11,7 +11,7 @@ interface
   uses System.Generics.Collections,System.Rtti, System.SysUtils, System.TypInfo, Winapi.Windows,
        PythonEngine,
        Python.Utils,
-       Models ;
+       np.Models ;
 
 type
 
@@ -515,7 +515,7 @@ type
   procedure CreatePyFunc(AModule: TPythonModule; AMethodDef: PPyMethodDef);
 
 implementation
-    uses System.IOUtils,MethodCallBack, np.Api,np.Base, utils ;
+    uses System.IOUtils,MethodCallBack, np.Api,np.Base, np.Utils ;
 
 procedure CreatePyFunc(AModule: TPythonModule; AMethodDef: PPyMethodDef);
 var
