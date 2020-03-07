@@ -325,8 +325,8 @@ begin
   Result := TNumPy.ToCsharp<T>(py);
 end;
 
-(*
-Function  TNDarrayGeneral.List<T> tolist<T>()
+{
+Function  TNDarrayGeneral.List<T>: tolist<T>()
 var
    np     : Tnp;
    pyargs : TPyTuple;
@@ -336,7 +336,7 @@ begin
   py := InvokeMethod('tolist');
   Result := np.ToCsharp<List<T>>(py);
 end;
-*)
+}
 
 Procedure  TNDarrayGeneral.tofile(fid : string ; sep : string ; format : string  );
 var

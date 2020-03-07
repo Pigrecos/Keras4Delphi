@@ -34,9 +34,9 @@ type
      function  GetItem(key:   string)         : TPythonObject; overload;
      function  GetItem(index: Integer)        : TPythonObject; overload;
 
-     procedure  SetItem(key:   TPythonObject; value: TPythonObject ) ; overload ;
-     procedure  SetItem(key:   string;        value: TPythonObject ) ; overload ;
-     procedure  SetItem(index: Integer;       value: TPythonObject ) ; overload ;
+     procedure  SetItem(key:   TPythonObject;  value: TPythonObject ) ; overload ;
+     procedure  SetItem(key:   string;         value: TPythonObject ) ; overload ;
+     procedure  SetItem(index: Integer;        value: TPythonObject ) ; overload ;
 
    public
      constructor Create(t: TPythonObject); overload;
@@ -73,10 +73,11 @@ type
      function InvokeMethod(name: string; args: TArray<TPythonObject>; kw: TPyDict):TPythonObject; overload;
      function InvokeMethod(name: string; args: TPyTuple; kw: TPyDict ):TPythonObject; overload;
 
-     property Handle     : PPyObject                   read FHandle;
-     property Item[index :TPythonObject]:TPythonObject read GetItem write SetItem; default;
-     property Item[index :string]       :TPythonObject read GetItem write SetItem; default;
-     property Item[index :Integer]      :TPythonObject read GetItem write SetItem; default;
+     property Handle                        : PPyObject    read FHandle;
+     property ItemFrom[index :TPythonObject]:TPythonObject read GetItem write SetItem; default;
+     property Itemfrom[index :string]       :TPythonObject read GetItem write SetItem; default;
+     property ItemFrom[index :Integer]      :TPythonObject read GetItem write SetItem; default;
+
  end;
 
  TPyNumber = class(TPythonObject)
@@ -539,6 +540,7 @@ var
  vArr         : TArray<TPythonObject>;
  seq_length,i : Integer;
 begin
+    Result := [];
     if g_MyPyEngine.PySequence_Check( FHandle ) <> 1 then Result := [];
 
     seq_length := g_MyPyEngine.PySequence_Length( FHandle );
@@ -585,6 +587,7 @@ var
  vArr         : Variant;
  seq_length,i : Integer;
 begin
+    Result := [];
     if g_MyPyEngine.PySequence_Check( FHandle ) <> 1 then Result := [];
 
     seq_length := g_MyPyEngine.PySequence_Length( FHandle );
@@ -625,6 +628,7 @@ var
  vArr         : Variant;
  seq_length,i : Integer;
 begin
+    Result := [];
     if g_MyPyEngine.PySequence_Check( FHandle ) <> 1 then Result := [];
 
     seq_length := g_MyPyEngine.PySequence_Length( FHandle );
@@ -643,7 +647,7 @@ begin
     end;
 
     for i := 0 to  VarArrayHighBound(vArr, 1) do
-       Result := Result + [ vArr[i] ]
+      Result := Result + [ Integer (vArr[i]) ]
 
 end;
 
@@ -665,6 +669,7 @@ var
  vArr         : Variant;
  seq_length,i : Integer;
 begin
+    Result := [];
     if g_MyPyEngine.PySequence_Check( FHandle ) <> 1 then Result := [];
 
     seq_length := g_MyPyEngine.PySequence_Length( FHandle );
@@ -711,7 +716,6 @@ function TPythonObject.ToString: string;
 begin
     Result := g_MyPyEngine.PyObjectAsString(FHandle);
 end;
-
 
 { TPyNumber }
 

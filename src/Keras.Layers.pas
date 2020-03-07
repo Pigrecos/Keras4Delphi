@@ -640,7 +640,11 @@ type
                           go_backwards         : Boolean= false;
                           stateful             : Boolean= false;
                           unroll               : Boolean= false;
-                          reset_after          : Boolean= false);
+                          reset_after          : Boolean= false);overload;
+
+       constructor Create(units                : Integer;
+                          dropout              : Double;
+                          recurrent_dropout    : Double);overload;
   end;
 
 
@@ -707,11 +711,18 @@ type
                           return_state         : Boolean= false;
                           go_backwards         : Boolean= false;
                           stateful             : Boolean= false;
-                          unroll               : Boolean= false);overload;
+                          unroll               : Boolean= false;
+                          input_shape          : PTnp_Shape= nil);overload;
 
        constructor Create(units                : Integer;
                           dropout              : Double;
                           recurrent_dropout    : Double);overload;
+
+       constructor Create(units           : Integer;
+                          activation      : string ;
+                          input_shape     : PTnp_Shape;
+                          stateful        : Boolean;
+                          return_sequences: Boolean);  overload;
   end;
 
   TCuDNNLSTM = class(TRNN)
@@ -2343,6 +2354,18 @@ begin
     Init;
 end;
 
+constructor TGRU.Create(units: Integer; dropout, recurrent_dropout: Double);
+begin
+    Parameters := TList< TPair<String,TValue> >.Create;
+
+    Parameters.Add( TPair<String,TValue>.Create('units',units));
+    Parameters.Add( TPair<String,TValue>.Create('dropout',dropout));
+    Parameters.Add( TPair<String,TValue>.Create('recurrent_dropout',recurrent_dropout));
+
+    PyInstance := GetKerasClassIstance('layers.GRU');
+    Init;
+end;
+
 { TCuDNNGRU }
 
 constructor TCuDNNGRU.Create(units: Integer; kernel_initializer, recurrent_initializer, bias_initializer,
@@ -2408,7 +2431,7 @@ constructor TLSTM.Create(units: Integer; activation, recurrent_activation: strin
                             kernel_initializer, recurrent_initializer, bias_initializer: string; unit_forget_bias: Boolean; kernel_regularizer,
                             recurrent_regularizer, bias_regularizer, activity_regularizer, kernel_constraint, recurrent_constraint,
                             bias_constraint: string; dropout, recurrent_dropout: Double; implement: Integer; return_sequences, return_state,
-                            go_backwards, stateful, unroll: Boolean);
+                            go_backwards, stateful, unroll: Boolean; input_shape: PTnp_Shape);
 begin
     Parameters := TList< TPair<String,TValue> >.Create;
 
@@ -2436,6 +2459,9 @@ begin
     Parameters.Add( TPair<String,TValue>.Create('stateful',stateful));
     Parameters.Add( TPair<String,TValue>.Create('unroll',unroll));
 
+     if input_shape <> nil then Parameters.Add( TPair<String,TValue>.Create('input_shape',TValue.FromShape(input_shape^)))
+    else                       Parameters.Add( TPair<String,TValue>.Create('input_shape', TPythonObject.None ));
+
     PyInstance := GetKerasClassIstance('layers.LSTM');
     Init;
 end;
@@ -2447,6 +2473,23 @@ begin
     Parameters.Add( TPair<String,TValue>.Create('units',units));
     Parameters.Add( TPair<String,TValue>.Create('dropout',dropout));
     Parameters.Add( TPair<String,TValue>.Create('recurrent_dropout',recurrent_dropout));
+
+    PyInstance := GetKerasClassIstance('layers.LSTM');
+    Init;
+end;
+
+constructor TLSTM.Create(units: Integer; activation: string; input_shape : PTnp_Shape; stateful: Boolean; return_sequences: Boolean);
+begin
+    Parameters := TList< TPair<String,TValue> >.Create;
+
+    Parameters.Add( TPair<String,TValue>.Create('units',units));
+    Parameters.Add( TPair<String,TValue>.Create('activation',activation));
+
+    if input_shape <> nil then Parameters.Add( TPair<String,TValue>.Create('input_shape',TValue.FromShape(input_shape^)))
+    else                       Parameters.Add( TPair<String,TValue>.Create('input_shape', TPythonObject.None ));
+
+    Parameters.Add( TPair<String,TValue>.Create('stateful',stateful));
+    Parameters.Add( TPair<String,TValue>.Create('return_sequences',return_sequences));
 
     PyInstance := GetKerasClassIstance('layers.LSTM');
     Init;

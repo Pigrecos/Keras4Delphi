@@ -551,7 +551,7 @@ end;
 
 constructor TKeras.Create;
 begin
-    if Assigned(hKerasMod) then Exit;
+   // if Assigned(hKerasMod) then Exit;
 
     hKerasMod :=  TPythonObject.Create( ImportModule('keras') );
 
@@ -2080,20 +2080,27 @@ begin
 
     PyInstance := GetKerasClassIstance('callbacks.History');
     init();
+
 end;
 
 constructor THistory.Create(py: PPyObject);
 begin
     inherited Create;
 
-    pyInstance := TPythonObject.Create(py)
+    pyInstance := TPythonObject.Create(py) ;
+
+    FEpoch       := GetEpoch;
+    FHistoryLogs := GetHistoryLogs;
 end;
 
 constructor THistory.Create(py: TPythonObject);
 begin
     inherited Create;
 
-    pyInstance := py
+    pyInstance := py  ;
+
+    FEpoch       := GetEpoch;
+    FHistoryLogs := GetHistoryLogs;
 end;
 
 function THistory.GetEpoch: TArray<Integer>;

@@ -132,7 +132,7 @@ type
   TNDArray<T>  = class;
 
   TNDArray = class(TPythonObject)
-  private
+    private
 
       function  Getitem(index: string): TNDarray; overload;
       procedure SetItem(index: string; const Value: TNDarray); overload;
@@ -245,10 +245,10 @@ type
       Function IopOr     (obj: TValue): TNDarray ;
       Function IopXor    ( obj:TValue): TNDarray ;
 
-      property Item[index: string]:TNDarray           read Getitem write SetItem;  default;
-      property Item[index: TArray<Integer>] :TNDarray read Getitem write SetItem ; default;
-      property Item[index: TArray<TNDarray>]:TNDarray read Getitem write SetItem ; default;
-      property Item[index: TArray<TVarRec>] :TNDarray read Getitem write SetItem ; default;
+      property Items[index: string]:TNDarray           read Getitem write SetItem; default;
+      property Items[index: TArray<Integer>] :TNDarray read Getitem write SetItem ;default;
+      property Items[index: TArray<TNDarray>]:TNDarray read Getitem write SetItem ;default;
+      property Items[index: TArray<TVarRec>] :TNDarray read Getitem write SetItem ;default;
   end;
 
   TNDArray<T>  = class (TNDArray)
@@ -867,6 +867,8 @@ end;
 function TNDArray.Getitem(index: TArray<Integer>): TNDarray;
 var
  tuple : TPyTuple;
+
+  res : Integer;
 begin
     tuple  := TNumPy.ToTuple(TValue.ArrayOfToValueArray<Integer>(index));
     Result := TNDarray.Create( TPythonObject(Self)[tuple] );
@@ -875,9 +877,10 @@ end;
 procedure TNDArray.SetItem(index: TArray<Integer>; const Value: TNDarray);
 var
  tuple : TPyTuple;
+ res  : Integer;
 begin
     tuple  := TNumPy.ToTuple(TValue.ArrayOfToValueArray<Integer>(index));
-    TPythonObject(Self)[tuple] := TNumPy.ToPython(TPythonObject(value) )
+    TPythonObject(Self)[tuple] := TNumPy.ToPython(value );
 end;
 
 function TNDArray.Getitem(index: TArray<TNDarray>): TNDarray;

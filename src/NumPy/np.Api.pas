@@ -181,18 +181,18 @@ type
       class function empty(shape: Tnp_Shape; dtype : TDtype = nil; order : PChar = nil): TNDarray; overload;
       class function empty(shape : TArray<Integer>): TNDarray; overload; //np.aliases.cs
 
-      function arange(start : byte ; stop: byte; step  : byte  =  1; dtype  : TDtype  =  nil): TNDarray; overload;
-      Function arange(stop  : byte ;             step  : byte  =  1; dtype  : TDtype  =  nil): TNDarray; overload;
-      Function arange(start : Word ; stop : Word; step  : Word  =  1; dtype  : TDtype  =  nil): TNDarray; overload;
-      Function arange(stop  : Word ;              step  : Word  =  1; dtype  : TDtype  =  nil): TNDarray; overload;
-      Function arange(start : Integer ; stop: Integer; step  : Integer  =  1; dtype  : TDtype  =  nil): TNDarray; overload;
-      Function arange(stop  : Integer ;                step  : Integer  =  1; dtype  : TDtype  =  nil): TNDarray; overload;
-      Function arange(start : int64 ; stop: int64; step  : int64  =  1; dtype  : TDtype  =  nil): TNDarray; overload;
-      Function arange(stop  : Int64 ;              step  : Int64  =  1; dtype  : TDtype  =  nil): TNDarray; overload;
-      Function arange(start : Single ; stop: Single; step  : Single  =  1; dtype  : TDtype  =  nil): TNDarray; overload;
-      Function arange(stop  : Single ;               step  : Single  =  1; dtype  : TDtype  =  nil): TNDarray; overload;
-      Function arange(start : Double ; stop: Double; step  : Double  =  1; dtype  : TDtype  =  nil): TNDarray; overload;
-      Function arange(stop  : Double ;               step  : Double  =  1; dtype  : TDtype  =  nil): TNDarray; overload;
+      class function arange(start : byte ; stop: byte; step  : byte  =  1; dtype  : TDtype  =  nil): TNDarray; overload;
+      class Function arange(stop  : byte ;             step  : byte  =  1; dtype  : TDtype  =  nil): TNDarray; overload;
+      class Function arange(start : Word ; stop : Word; step  : Word  =  1; dtype  : TDtype  =  nil): TNDarray; overload;
+      class Function arange(stop  : Word ;              step  : Word  =  1; dtype  : TDtype  =  nil): TNDarray; overload;
+      class Function arange(start : Integer ; stop: Integer; step  : Integer  =  1; dtype  : TDtype  =  nil): TNDarray; overload;
+      class Function arange(stop  : Integer ;                step  : Integer  =  1; dtype  : TDtype  =  nil): TNDarray; overload;
+      class Function arange(start : int64 ; stop: int64; step  : int64  =  1; dtype  : TDtype  =  nil): TNDarray; overload;
+      class Function arange(stop  : Int64 ;              step  : Int64  =  1; dtype  : TDtype  =  nil): TNDarray; overload;
+      class Function arange(start : Single ; stop: Single; step  : Single  =  1; dtype  : TDtype  =  nil): TNDarray; overload;
+      class Function arange(stop  : Single ;               step  : Single  =  1; dtype  : TDtype  =  nil): TNDarray; overload;
+      class Function arange(start : Double ; stop: Double; step  : Double  =  1; dtype  : TDtype  =  nil): TNDarray; overload;
+      class Function arange(stop  : Double ;               step  : Double  =  1; dtype  : TDtype  =  nil): TNDarray; overload;
 
       function asanyarray(a : TNDarray ; dtype  : TDtype  =  nil; order  : pChar = nil): TNDarray; overload;
       function asanyarray<T>(a : TArray<T>; dtype  : TDtype  =  nil; order  : pChar = nil): TNDarray<T>; overload;
@@ -3203,7 +3203,7 @@ Function partial class core {
 end;
 *)
 
-Function TNumPyArray.arange(start : byte ; stop: byte; step  : byte  =  1; dtype  : TDtype  =  nil): TNDarray;
+class Function TNumPyArray.arange(start : byte ; stop: byte; step  : byte  =  1; dtype  : TDtype  =  nil): TNDarray;
 var
   pyargs : TPyTuple;
   kwargs : TPyDict;
@@ -3219,7 +3219,7 @@ begin
     Result := TNumPy.ToCsharp<TNDarray>(py);
 end;
 
-Function TNumPyArray.arange(stop : byte ; step  : byte  =  1; dtype  : TDtype  =  nil): TNDarray;
+class Function TNumPyArray.arange(stop : byte ; step  : byte  =  1; dtype  : TDtype  =  nil): TNDarray;
 var
   pyargs : TPyTuple;
   kwargs : TPyDict;
@@ -3234,7 +3234,7 @@ begin
     Result := TNumPy.ToCsharp<TNDarray>(py);
 end;
 
-Function TNumPyArray.arange(start : Word ; stop : Word; step  : Word  =  1; dtype  : TDtype  =  nil): TNDarray;
+class Function TNumPyArray.arange(start : Word ; stop : Word; step  : Word  =  1; dtype  : TDtype  =  nil): TNDarray;
 var
   pyargs : TPyTuple;
   kwargs : TPyDict;
@@ -3250,7 +3250,7 @@ begin
     Result := TNumPy.ToCsharp<TNDarray>(py);
 end;
 
-Function TNumPyArray.arange(stop : Word ; step  : Word  =  1; dtype  : TDtype  =  nil): TNDarray;
+class Function TNumPyArray.arange(stop : Word ; step  : Word  =  1; dtype  : TDtype  =  nil): TNDarray;
 var
   pyargs : TPyTuple;
   kwargs : TPyDict;
@@ -3265,7 +3265,7 @@ begin
     Result := TNumPy.ToCsharp<TNDarray>(py);
 end;
 
-Function TNumPyArray.arange(start : Integer ; stop: Integer; step  : Integer  =  1; dtype  : TDtype  =  nil): TNDarray;
+class Function TNumPyArray.arange(start : Integer ; stop: Integer; step  : Integer  =  1; dtype  : TDtype  =  nil): TNDarray;
 var
   pyargs : TPyTuple;
   kwargs : TPyDict;
@@ -3281,7 +3281,7 @@ begin
     Result := TNumPy.ToCsharp<TNDarray>(py);
 end;
 
-Function TNumPyArray.arange(stop : Integer ; step  : Integer  =  1; dtype  : TDtype  =  nil): TNDarray;
+class Function TNumPyArray.arange(stop : Integer ; step  : Integer  =  1; dtype  : TDtype  =  nil): TNDarray;
 var
   pyargs : TPyTuple;
   kwargs : TPyDict;
@@ -3296,7 +3296,7 @@ begin
     Result := TNumPy.ToCsharp<TNDarray>(py);
 end;
 
-Function TNumPyArray.arange(start : Int64 ; stop: Int64; step  : Int64  =  1; dtype  : TDtype  =  nil): TNDarray;
+class Function TNumPyArray.arange(start : Int64 ; stop: Int64; step  : Int64  =  1; dtype  : TDtype  =  nil): TNDarray;
 var
   pyargs : TPyTuple;
   kwargs : TPyDict;
@@ -3312,7 +3312,7 @@ begin
     Result := TNumPy.ToCsharp<TNDarray>(py);
 end;
 
-Function TNumPyArray.arange(stop : int64 ; step  : Int64  =  1; dtype  : TDtype  =  nil): TNDarray;
+class Function TNumPyArray.arange(stop : int64 ; step  : Int64  =  1; dtype  : TDtype  =  nil): TNDarray;
 var
   pyargs : TPyTuple;
   kwargs : TPyDict;
@@ -3327,7 +3327,7 @@ begin
     Result := TNumPy.ToCsharp<TNDarray>(py);
 end;
 
-Function TNumPyArray.arange(start : Single ; stop: Single; step  : Single  =  1; dtype  : TDtype  =  nil): TNDarray;
+class Function TNumPyArray.arange(start : Single ; stop: Single; step  : Single  =  1; dtype  : TDtype  =  nil): TNDarray;
 var
   pyargs : TPyTuple;
   kwargs : TPyDict;
@@ -3343,7 +3343,7 @@ begin
     Result := TNumPy.ToCsharp<TNDarray>(py);
 end;
 
-Function TNumPyArray.arange(stop : Single ; step  : Single  =  1; dtype  : TDtype  =  nil): TNDarray;
+class Function TNumPyArray.arange(stop : Single ; step  : Single  =  1; dtype  : TDtype  =  nil): TNDarray;
 var
   pyargs : TPyTuple;
   kwargs : TPyDict;
@@ -3358,7 +3358,7 @@ begin
     Result := TNumPy.ToCsharp<TNDarray>(py);
 end;
 
-Function TNumPyArray.arange(start : double ; stop: double; step  : double  =  1; dtype  : TDtype  =  nil): TNDarray;
+class Function TNumPyArray.arange(start : double ; stop: double; step  : double  =  1; dtype  : TDtype  =  nil): TNDarray;
 var
   pyargs : TPyTuple;
   kwargs : TPyDict;
@@ -3374,7 +3374,7 @@ begin
     Result := TNumPy.ToCsharp<TNDarray>(py);
 end;
 
-Function TNumPyArray.arange(stop : double ; step  : double  =  1; dtype  : TDtype  =  nil): TNDarray;
+class Function TNumPyArray.arange(stop : double ; step  : double  =  1; dtype  : TDtype  =  nil): TNDarray;
 var
   pyargs : TPyTuple;
   kwargs : TPyDict;
