@@ -264,8 +264,8 @@ type
       function vander<T>(x: TArray<T>; N  : PInteger  =  nil; increasing  : Boolean  =  false): TNDarray<T>;  overload;
       Function vander<T>(x: TArray2D<T>; N  : PInteger  =  nil; increasing  : Boolean  =  false):TNDarray<T>;  overload;
 
-      function zeros(shape : Tnp_Shape ; dtype  : TDtype  =  nil; order  : pChar = nil): TNDarray; overload;
-      function zeros(shape : TArray<Integer>): TNDarray; overload;// np.aliases.cs
+      class function zeros(shape : Tnp_Shape ; dtype  : TDtype  =  nil; order  : pChar = nil): TNDarray; overload;
+      class function zeros(shape : TArray<Integer>): TNDarray; overload;// np.aliases.cs
 
       function zeros_like(a : TNDarray ; dtype  : TDtype  =  nil; order  : pChar = nil; subok  : Boolean  =  true): TNDarray;overload;
       function zeros_like<T>(a: TArray<T>; dtype  : TDtype  =  nil; order  : pChar = nil; subok  : Boolean  =  true): TNDarray<T>; overload;
@@ -2675,12 +2675,12 @@ begin
     Result := TNumPy.ToCsharp<TNDarray<T>>(py);
 end;
 
-function TNumPyArray.zeros(shape : TArray<Integer>): TNDarray;
+class function TNumPyArray.zeros(shape : TArray<Integer>): TNDarray;
 begin
     Result := zeros(Tnp_Shape.Create(shape)) ;
 end;
 
-Function TNumPyArray.zeros(shape : Tnp_Shape ; dtype  : TDtype  =  nil; order  : pChar = nil): TNDarray;
+class Function TNumPyArray.zeros(shape : Tnp_Shape ; dtype  : TDtype  =  nil; order  : pChar = nil): TNDarray;
 var
   pyargs : TPyTuple;
   kwargs : TPyDict;

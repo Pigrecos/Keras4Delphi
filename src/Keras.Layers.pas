@@ -159,10 +159,12 @@ type
                           kernel_constraint   : string = '';
                           bias_constraint     : string = '';
                           input_shape         : PTnp_Shape = nil); overload;
+
        constructor Create(filters             : Integer;
                           kernel_size         : Integer;
                           padding             : string;
-                          activation          : string); overload;
+                          activation          : string;
+                          input_shape         : PTnp_Shape); overload;
   end;
 
   TConv2D = class(TBaseLayer)
@@ -1237,7 +1239,7 @@ begin
     Init;
 end;
 
-constructor TConv1D.Create(filters, kernel_size: Integer; padding, activation: string);
+constructor TConv1D.Create(filters, kernel_size: Integer; padding, activation: string; input_shape: PTnp_Shape);
 begin
     inherited Create;
 
@@ -1245,6 +1247,9 @@ begin
     Parameters.Add( TPair<String,TValue>.Create('kernel_size',kernel_size));
     Parameters.Add( TPair<String,TValue>.Create('padding',padding));
     Parameters.Add( TPair<String,TValue>.Create('activation',activation));
+
+    if input_shape <> nil then Parameters.Add( TPair<String,TValue>.Create('input_shape',TValue.FromShape(input_shape^)))
+    else                       Parameters.Add( TPair<String,TValue>.Create('input_shape', TPythonObject.None ));
 
     PyInstance := GetKerasClassIstance('layers.Conv1D');
     Init;
@@ -1991,7 +1996,7 @@ begin
      else                       Parameters.Add( TPair<String,TValue>.Create('input_shape', TPythonObject.None ));
 
      PyInstance := GetKerasClassIstance('layers.BatchNormalization');
-     Init;
+     Init(False);
 end;
 
 { TMaxPooling1D }

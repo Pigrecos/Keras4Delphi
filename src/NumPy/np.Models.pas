@@ -877,7 +877,6 @@ end;
 procedure TNDArray.SetItem(index: TArray<Integer>; const Value: TNDarray);
 var
  tuple : TPyTuple;
- res  : Integer;
 begin
     tuple  := TNumPy.ToTuple(TValue.ArrayOfToValueArray<Integer>(index));
     TPythonObject(Self)[tuple] := TNumPy.ToPython(value );

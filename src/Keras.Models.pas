@@ -261,7 +261,7 @@ procedure TBaseModel.Compile(optimizer: TStringOrInstance; loss: string; metrics
 begin
     Parameters.Clear;
 
-    Parameters.Add( TPair<String,TValue>.Create('optimizer',optimizer));
+    Parameters.Add( TPair<String,TValue>.Create('optimizer',optimizer.PyObject));
     Parameters.Add( TPair<String,TValue>.Create('loss',loss));
     Parameters.Add( TPair<String,TValue>.Create('metrics',TValue.FromArray<string>(metrics)));
     Parameters.Add( TPair<String,TValue>.Create('loss_weights',TValue.FromArray<Double>(loss_weights)));
