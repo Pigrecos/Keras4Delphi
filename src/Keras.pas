@@ -33,7 +33,7 @@ type
 
   TBase = class(TKeras)
     private
-      function  Instantiate: TPythonObject;
+      function  Instantiate(posArg: Boolean= True): TPythonObject;
       function  GetItem(name: string): TValue;
       procedure SetItem(name: string; const Value: TValue);
 
@@ -46,7 +46,7 @@ type
 
        function  InvokeMethod(                                   method: string; args: TList< TPair<String,TValue> >): TPythonObject;
        class function  InvokeStaticMethod(caller: TPythonObject; method: string; args: TList< TPair<String,TValue> >): TPythonObject;
-       procedure Init;
+       procedure Init(posArg: Boolean = True);
 
        class function  GetKerasClassIstance(nameClass: AnsiString): TPythonObject;
        class function  GetTFClassIstance(nameClass: AnsiString): TPythonObject;
@@ -88,13 +88,18 @@ type
 
   // InternalTypes
 
-  TStringOrInstance = class
+  TStringOrInstance = record
      public
-       PyObject : TPythonObject;
+       PyObject : TPythonObject ;
+       class operator implicit(py: PPyObject): TStringOrInstance;
+       class operator implicit(py: TPythonObject): TStringOrInstance;
+       class operator implicit(opt: string): TStringOrInstance;
+       class operator implicit(opt: TBase): TStringOrInstance;
+       {PyObject : TPythonObject;
        constructor Create(py: PPyObject); overload;
        constructor Create(py: TPythonObject); overload;
        constructor Create(opt: string); overload;
-       constructor Create(opt: TBase); overload;
+       constructor Create(opt: TBase); overload; }
   end;
 
   TKerasFunction = class
@@ -858,12 +863,12 @@ begin
     Parameters.Add( TPair<String,TValue>.Create(name,value) );
 end;
 
-procedure TBase.Init;
+procedure TBase.Init(posArg: Boolean);
 begin
-    PyInstance := Instantiate;
+    PyInstance := Instantiate(posArg);
 end;
 
-function TBase.Instantiate: TPythonObject;
+function TBase.Instantiate(posArg: Boolean): TPythonObject;
 var
    pyargs : TPyTuple;
    kwargs : TPyDict;
@@ -871,12 +876,19 @@ var
    item   : TPair<String,TValue>;
 begin
 
-  if Parameters.Count > 0 then pyargs := ToTuple([Parameters.First.Value])
-  else                         pyargs := ToTuple([]);
+  if posArg = False  then
+  begin
+      pyargs := ToTuple([]);
+      skip := False;
+  end else
+  begin
+      if Parameters.Count > 0 then pyargs := ToTuple([Parameters.First.Value])
+      else                         pyargs := ToTuple([]);
+      skip := True;
+  end;
 
   kwargs := TPyDict.Create;
 
-  skip := True;
   for item in  Parameters do
   begin
       if skip then
@@ -1045,24 +1057,28 @@ end;
 
 { TStringOrInstance }
 
-constructor TStringOrInstance.Create(py: PPyObject);
+class operator TStringOrInstance.Implicit(py: PPyObject):TStringOrInstance;
 begin
-    PyObject := TPythonObject.Create( py );
+    ZeroMemory(@Result, SizeOf(TStringOrInstance));
+    Result.PyObject := TPythonObject.Create( py );
 end;
 
-constructor TStringOrInstance.Create(py: TPythonObject);
+class operator TStringOrInstance.Implicit(py: TPythonObject):TStringOrInstance;
 begin
-    PyObject := py;
+    ZeroMemory(@Result, SizeOf(TStringOrInstance));
+    Result.PyObject := py;
 end;
 
-constructor TStringOrInstance.Create(opt: TBase);
+class operator TStringOrInstance.Implicit(opt: TBase):TStringOrInstance;
 begin
-    Create(opt.PyInstance);
+     ZeroMemory(@Result, SizeOf(TStringOrInstance));
+     Result.PyObject := opt.PyInstance;
 end;
 
-constructor TStringOrInstance.Create(opt: string);
+class operator TStringOrInstance.Implicit(opt: string):TStringOrInstance;
 begin
-    Create( TKeras.ToPython(opt) );
+    ZeroMemory(@Result, SizeOf(TStringOrInstance));
+    Result.PyObject :=  TKeras.ToPython(opt) ;
 end;
 
 { TKerasFunction }
