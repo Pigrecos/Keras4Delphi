@@ -8,11 +8,15 @@ uses
   System.TypInfo, System.Rtti,PythonEngine, PythonGUIInputOutput,
   Python.Utils,
 
+  Keras.Layers,
+  Keras.Models,
+  Keras,
+
   np.Base,
   np.Api,
 
   np.Models,
-  NDArray.Api;
+  NDArray.Api, VclTee.TeeGDIPlus, VCLTee.TeEngine, VCLTee.Series, VCLTee.TeeProcs, VCLTee.Chart, Vcl.Buttons;
 
 type
   TArray2D<T> = array of TArray<T>;
@@ -20,13 +24,20 @@ type
     pnlTop: TPanel;
     pnl1: TPanel;
     redtOutput: TRichEdit;
-    splBottom: TSplitter;
     PyIOCom: TPythonGUIInputOutput;
     btn1: TButton;
     img1: TImage;
+    pnl2: TPanel;
+    spl1: TSplitter;
+    spl2: TSplitter;
+    cht1: TChart;
+    srsTraining_Loss: TLineSeries;
+    srsValidation_loss: TLineSeries;
+    btn2: TBitBtn;
     procedure FormShow(Sender: TObject);
     procedure btn1Click(Sender: TObject);
     procedure redtOutputChange(Sender: TObject);
+    procedure btn2Click(Sender: TObject);
   private
     procedure TestVarios;
     procedure esempio_XOR;
@@ -38,6 +49,9 @@ type
     procedure SentimentClassification;
     procedure SentimentClassificationLSTM;
     procedure Predict(text: string);
+    procedure TextGen;
+    function LoadTxt(fileName: string; lenSeq:Integer; var rawTxt: TArray<AnsiChar>; var DataX: TArray2D<Integer>; var DataY: TArray<Integer>):Integer;
+    procedure TextGen_predict(model : TSequential);
     { Private declarations }
   public
     { Public declarations }
@@ -47,12 +61,11 @@ var
   frmMain: TfrmMain;
   vNumpy : TNumPy;
 
+
 implementation
-     uses System.Generics.Collections, System.Diagnostics, System.IOUtils, Jpeg,MethodCallBack,
+     uses System.Generics.Collections, System.Diagnostics, System.IOUtils, Jpeg,MethodCallBack,System.Math,
           np.Utils,
-          Keras,
-          Keras.Layers,
-          Keras.Models,
+
           Keras.PreProcessing;
 
 {$R *.dfm}
@@ -81,16 +94,18 @@ begin
                                          [ [6,3,2], [8,2,1] ]
                                        ]  ) ;
 
-    var p: PPyObject := TestArray.data;
-    var g: Integer   := TestArray.ndim;
-    var gg : Integer := TestArray.itemsize;
-    var gz : Integer := TestArray.len;
-    var ite: int64   := TestArray.item<int64>([4]);
+    TestArray.data;
+    TestArray.ndim;
+    TestArray.itemsize;
+    TestArray.len;
+    TestArray.item<int64>([4]);
+
 
     var a    : TArray2D<Integer> :=   [ [1,2,3], [4,5,6] ] ;
     var given: TNDArray          :=  vNumpy.empty_like<Integer>(a);
     var sh   : Tnp_Shape         := given.shape;
     var dt   : TDtype            := given.dtype;
+    redtOutput.Lines.Add(dt.ToString);
 
     s1 := TestArray.repr ;
     redtOutput.Lines.Add(s1) ;
@@ -114,11 +129,13 @@ begin
 
     TestArray1 := vNumpy.npArray<Integer>([24]);
     i :=vNumpy.asscalar<Integer>(TestArray1);
+    redtOutput.Lines.Add( IntToStr(i) )
 
 end;
 
 function log(epochidx: Integer): Double;
 begin
+    Result := 0.0;
     frmMain.redtOutput.Lines.Add('test callback :' + IntToStr(epochidx));
 end;
 
@@ -127,6 +144,7 @@ var
   epochidx: Integer ;
   d       : Double;
 begin
+    Result := nil;
     if g_MyPyEngine.PyArg_ParseTuple( args, 'if:logFunction',@epochidx,@d) <> 0 then
     begin
         log(epochidx) ;
@@ -138,8 +156,8 @@ end;
 procedure TfrmMain.btn1Click(Sender: TObject);
 begin
     //============== Esempi ======================//
-    NumPyTest;
-
+    TextGen ;
+     NumPyTest;
     // keras test
     Test1;
     esempio_XOR;
@@ -171,7 +189,7 @@ begin
     x  := vNumpy.randn([N, D_in]);
     y  := vNumpy.randn([N, D_out]);
 
-    var ite: Double   := y.item<double>([1,2]);
+    y.item<double>([1,2]);
 
     redtOutput.Lines.Add(' learning');
     stopwatch :=  TStopwatch.StartNew;
@@ -180,7 +198,6 @@ begin
     w2 := vNumpy.randn([HH, D_out]);
 
     learning_rate := 1.0E-06;
-    loss := Double.MaxValue;
 
     var h           : TNDArray;
     var h_relu      : TNDArray;
@@ -207,7 +224,7 @@ begin
         grad_w2     := h_relu.T.dot(grad_y_pred);
         grad_h_relu := grad_y_pred.dot(w2.T);
         grad_h      := grad_h_relu.copy();
-        grad_h[TNDArray.opLess(h, 0)]   := vNumpy.asarray(0);
+        TPythonObject(grad_h)[TNDArray.opLess(h, 0)]   := vNumpy.asarray(0);
         grad_w1     := x.T.dot(grad_h);
 
         // Update weights
@@ -228,7 +245,7 @@ end;
 procedure TfrmMain.Test1;
 var
  res      : tarray<tndarray>;
- callback : TCallback;
+
 begin
 
 
@@ -248,9 +265,9 @@ begin
     redtOutput.Lines.Add( IntToStr(y_train.shape[0]) + ' train samples');
     redtOutput.Lines.Add( IntToStr(y_test.shape[0]) + '  test  samples');
 
-    callback := TEarlyStopping.Create ('val_loss', 3)  ;
+    TEarlyStopping.Create ('val_loss', 3)  ;
 
-    callback := TLearningRateScheduler.Create (pylog)  ;
+    TLearningRateScheduler.Create (pylog)  ;
 end;
 
 procedure TfrmMain.esempio_XOR;
@@ -266,16 +283,20 @@ begin
     var output : TBaseLayer  := TDense.Create(1,  'sigmoid').&Set([hidden2]);
 
     var model : TModel := TModel.Create ( [ input ] , [ output ]);
+    model.Summary;
 
     //Compile and train
-    model.Compile(TStringOrInstance.Create( TAdam.Create ), 'binary_crossentropy',['accuracy']);
+    model.Compile(TAdam.Create , 'binary_crossentropy',['accuracy']);
 
     var batch_size : Integer := 2;
     var history: THistory := model.Fit(x, y, @batch_size, 10,1);
 
-    model.Summary;
-   
-    var logs := history.HistoryLogs;
+    srsTraining_Loss.Clear;
+    srsTraining_Loss.AddArray(history.HistoryLogs['loss']) ;
+    srsValidation_loss.Clear;
+    srsValidation_loss.AddArray(history.HistoryLogs['accuracy']);
+
+    history.HistoryLogs;
 
     //Save model and weights
     var json : string := model.ToJson;
@@ -293,11 +314,12 @@ begin
     var a      : TBaseLayer  := TDense.Create(32, 'sigmoid').&Set([input]);
     var output : TBaseLayer  := TDense.Create(1, 'sigmoid').&Set([a]);
 
-    var model : TModel := TModel.Create ( [ input ] , [ output ]);
+    TModel.Create ( [ input ] , [ output ]);
 
     //Load train data
     var x : TNDarray := TNumPy.npArray<Double>( [ [ 0, 0 ], [ 0, 1 ], [ 1, 0 ], [ 1, 1 ] ] );
-    var y : TNDarray := TNumPy.npArray<Double>( [ 0, 1, 1, 0 ] );
+    redtOutput.Lines.Add('x :' + x.shape.ToString);
+    TNumPy.npArray<Double>( [ 0, 1, 1, 0 ] );
 
     var input1  : TKInput    := TKInput.Create(tnp_shape.Create([32, 32,3]));
     var conv1   : TBaseLayer := TConv2D.Create(32, [4, 4], 'relu').&Set([input1]);
@@ -309,7 +331,7 @@ begin
     var pool2   : TBaseLayer := TMaxPooling2D.Create([2, 2]).&Set([conv2]);
     var flatten2: TBaseLayer := TFlatten.Create.&Set([pool2]);
 
-    var merge : TConcatenate := TConcatenate.Create([flatten1, flatten2]);
+    TConcatenate.Create([flatten1, flatten2]);
 
 end;
 
@@ -328,15 +350,15 @@ begin
     model.Add( TDense.Create(64, 'relu'));
     model.Add( TDense.Create(1, 'sigmoid'));
 
-    var callback : TCallback := TLearningRateScheduler.Create (pylog) ;
+    var callback : keras.TCallback := TLearningRateScheduler.Create (pylog) ;
 
-    var lossHistory : TCallback := TCallback.Custom('LossHistory', 'LossHistory.py');
+    var lossHistory : keras.TCallback := keras.TCallback.Custom('LossHistory', 'LossHistory.py');
 
 
     //Compile and train
-    model.Compile(TStringOrInstance.Create( TAdam.Create ), 'binary_crossentropy', [ 'accuracy' ]);
+    model.Compile(TAdam.Create, 'binary_crossentropy', [ 'accuracy' ]);
     var batch_size: Integer  := 2;
-    var history : THistory := model.Fit(x, y, @batch_size, 10, 1, [ callback,lossHistory ]);
+    model.Fit(x, y, @batch_size, 10, 1, [ callback,lossHistory ]);
 
     var customLosses: TArray<Double> := lossHistory.GetDoubleArray('losses');
 
@@ -365,7 +387,8 @@ begin
     y_train := res[1];
     x_test  := res[2];
     y_test  := res[3];
-
+    redtOutput.Lines.Add('y_train shape: ' + y_train.shape.ToString);
+     redtOutput.Repaint;
     //Check if its channel fist or last and rearrange the dataset accordingly
     var K: TBackend := TBackend.Create;
     if(K.ImageDataFormat = 'channels_first') then
@@ -387,13 +410,17 @@ begin
     x_test  := TNDArray.opDiv(x_test, 255);
 
     redtOutput.Lines.Add('x_train shape: ' + x_train.shape.ToString);
+    redtOutput.Lines.Add('y_train shape: ' + y_train.shape.ToString);
     redtOutput.Lines.Add( IntToStr(x_train.shape[0]) + ' train samples');
     redtOutput.Lines.Add( IntToStr(x_test.shape[0]) + '  test  samples');
+    redtOutput.Repaint;
 
     // Convert class vectors to binary class matrices
     var Util : TUtil := TUtil.Create;
     y_train := Util.ToCategorical(y_train, @num_classes);
     y_test  := Util.ToCategorical(y_test, @num_classes);
+    redtOutput.Lines.Add('y_train shape: ' + y_train.shape.ToString)   ;
+    redtOutput.Repaint;
 
     // Build CNN model
     var model : TSequential := TSequential.Create;
@@ -406,12 +433,18 @@ begin
     model.Add( TDense.Create(128, 'relu'));
     model.Add( TDropout.Create(0.5));
     model.Add( TDense.Create(num_classes, 'softmax'));
+    model.Summary;
 
     //Compile with loss, metrics and optimizer
-    model.Compile(TStringOrInstance.Create(TAdadelta.Create), 'categorical_crossentropy', [ 'accuracy' ]);
+    model.Compile(TAdadelta.Create, 'categorical_crossentropy', [ 'accuracy' ]);
 
     //Train the model
-    model.Fit(x_train, y_train, @batch_size, epochs, 1,nil,0,[ x_test, y_test ]);
+    var history: THistory := model.Fit(x_train, y_train, @batch_size, epochs, 1,nil,0,[ x_test, y_test ]);
+
+    srsTraining_Loss.Clear;
+    srsTraining_Loss.AddArray(history.HistoryLogs['loss']) ;
+    srsValidation_loss.Clear;
+    srsValidation_loss.AddArray(history.HistoryLogs['accuracy']);
 
     //Score the model for performance
     var score : TArray<Double> := model.Evaluate(x_test, y_test, nil, 0);
@@ -434,10 +467,11 @@ begin
     // cut texts after this number of words (among top max_features most common words)
     var maxlen     : Integer := 80;
     var batch_size : Integer := 32;
+    var EpochNum   : Integer := 15;
 
     redtOutput.Lines.Add('Loading data...');
     res := TIMDB.load_data(@max_features);
-    var x_train, y_train ,x_test, y_test,X,Y,tmp : TNDArray;
+    var x_train, y_train ,x_test, y_test : TNDArray;
 
     x_train := res[0];
     y_train := res[1];
@@ -461,11 +495,16 @@ begin
     model.Add( TDense.Create(1, 'sigmoid'));
 
     //try using different optimizers and different optimizer configs
-    model.Compile(TStringOrInstance.Create('adam'), 'binary_crossentropy', [ 'accuracy' ]);
+    model.Compile('rmsprop', 'binary_crossentropy', [ 'accuracy' ]);
     model.Summary;
 
     redtOutput.Lines.Add('Train...');
-    model.Fit(x_train, y_train, @batch_size, 15, 1,[ x_test, y_test ]);
+    var history: THistory := model.Fit(x_train, y_train, @batch_size, EpochNum, 1,[ x_test, y_test ]);
+
+    srsTraining_Loss.Clear;
+    srsTraining_Loss.AddArray(history.HistoryLogs['loss']) ;
+    srsValidation_loss.Clear;
+    srsValidation_loss.AddArray(history.HistoryLogs['accuracy']);
 
     //Score the model for performance
     var score : TArray<Double> := model.Evaluate(x_test, y_test, @batch_size);
@@ -514,18 +553,23 @@ begin
     var model : TSequential := TSequential.Create;
 
     model.Add( TEmbedding.Create(max_features, embedding_size, @maxlen));
-    model.Add( TConv1D.Create(filters, kernel_size, 'same', 'relu'));
+    model.Add( TConv1D.Create(filters, kernel_size, 'same', 'relu',nil));
     model.Add( TMaxPooling1D.Create(pool_size));
     model.Add( TFlatten.Create);
     model.Add( TDense.Create(250, 'relu'));
     model.Add( TDense.Create(1, 'sigmoid'));
 
     //Compile with loss, metrics and optimizer
-    model.Compile(TStringOrInstance.Create('adam'), 'binary_crossentropy', [ 'accuracy' ]);
+    model.Compile('sgd', 'categorical_crossentropy', [ 'accuracy' ]);
     model.Summary;
 
     //Train the model
-    model.Fit(x_train, y_train, @embedding_size, 10, 2,[ x_test, y_test ]);
+    var history : THistory := model.Fit(x_train, y_train, @embedding_size, 10, 2,[ x_test, y_test ]);
+
+    srsTraining_Loss.Clear;
+    srsTraining_Loss.AddArray(history.HistoryLogs['loss']) ;
+    srsValidation_loss.Clear;
+    srsValidation_loss.AddArray(history.HistoryLogs['accuracy']);
 
     //Score the model for performance
     var score : TArray<Double> := model.Evaluate(x_test, y_test, nil, 0);
@@ -543,7 +587,6 @@ procedure TfrmMain.Predict(text: string);
 var
   model   : TBaseModel;
   indexes : TDictionary<string, Integer>;
-  item    : TPair<string, Integer>;
   words   : TArray<string>;
   w,res   : string;
   tokens  : TArray<Double>;
@@ -574,10 +617,229 @@ begin
 
 end;
 
+function TfrmMain.LoadTxt(fileName: string; lenSeq:Integer; var rawTxt: TArray<AnsiChar>; var DataX: TArray2D<Integer>; var DataY: TArray<Integer>):Integer;
+var
+  i,n,n_chars,
+  seq_length    : Integer;
+  s             : AnsiString;
+  c             : AnsiChar;
+  ss            : TStringStream;
+  seq_in,
+  seq_out       : TArray<AnsiChar>;
+  char_to_int   : TDictionary<AnsiChar,Integer>;
+
+begin
+    Result := 0;
+
+    ss := TStringStream.Create;
+    try
+      ss.LoadFromFile('Alice.txt');
+      SetLength(rawTxt,ss.Size);
+
+      ss.Position := 0;
+      i := ss.Read(rawTxt[0],ss.Size) ;
+
+      if i <1 then Exit;
+
+      SetString(s,PAnsiChar(@rawTxt[0]), Length(rawTxt));
+      s := AnsiLowerCase(s);
+
+      ZeroMemory(@rawTxt[0],Length(rawTxt));
+      CopyMemory(@rawTxt[0],@s[1],Length(s));
+      s := '';
+
+      char_to_int := TDictionary<AnsiChar,Integer>.Create;
+      try
+        n := 0;
+        for i := 0 to Length(rawTxt)-1 do
+        begin
+            if not char_to_int.ContainsKey( rawTxt[i] ) then
+            begin
+                char_to_int.Add(rawTxt[i],n);
+                inc(n);
+            end;
+        end;
+        Result :=  char_to_int.Count;
+
+        n_chars := Length(rawTxt);
+        // # prepare the dataset of input to output pairs encoded as integers
+        seq_length := lenSeq;
+        SetLength(seq_in,seq_length) ;
+        SetLength(seq_out,1);
+        for i := 0 to (n_chars - seq_length)-1 do
+        begin
+           ZeroMemory(seq_in,Length(seq_in));
+           ZeroMemory(seq_out,Length(seq_out));
+           TArray.Copy<AnsiChar>(rawTxt,seq_in,i,0, seq_length);
+           TArray.Copy<AnsiChar>(rawTxt,seq_out,i+seq_length,0, 1);
+
+           SetLength(dataX,Length(dataX)+1);
+           for c in seq_in do
+             dataX[ High(dataX) ] := dataX[ High(dataX) ] + [ char_to_int[c] ] ;
+
+           dataY := dataY + [ char_to_int[seq_out[0]] ]
+        end;
+
+      finally
+        char_to_int.Free;
+      end;
+
+    finally
+      ss.Free
+    end;
+end;
+
+// https://machinelearningmastery.com/text-generation-lstm-recurrent-neural-networks-python-keras/
+// text file - http://www.gutenberg.org/ebooks/28371
+procedure TfrmMain.TextGen;
+var
+  n_chars,
+  n_vocab,
+  seq_length,
+  n_patterns   : Integer;
+  raw_text     : TArray<AnsiChar>;
+  dataX        : TArray2D<Integer>;
+  dataY        : TArray<Integer>;
+  X,Y          : TNDArray;
+  input_shape  : Tnp_Shape;
+  checkpoint   : TModelCheckpoint;
+  batch_size   : Integer;
+  epochs       : Integer;
+begin
+    seq_length := 100;
+    batch_size := 64;
+    epochs     := 20;
+
+    n_vocab := LoadTxt('Alice.txt', seq_length, raw_text, dataX,dataY);
+    n_chars    := Length(raw_text);
+    n_patterns := Length(dataX);
+
+    redtOutput.Lines.Add('Total Characters: '   + IntToStr(n_chars));
+    redtOutput.Lines.Add('Total Vocab: '        + IntToStr(n_vocab));
+    redtOutput.Lines.Add('Total Patterns: '     + IntToStr(n_patterns));
+
+    X := TNumPy.npArray<Integer>(dataX);
+    //# reshape X to be [samples, time steps, features]
+    X := TNumPy.reshape(X,[n_patterns,seq_length,1]);
+    //# normalize
+    X := TNDArray.opDiv(X, Double(n_vocab));
+
+    Y := TNumPy.npArray<Integer>(dataY);
+    //# one hot encode the output variable
+    var Util : TUtil := TUtil.Create;
+    Y := Util.ToCategorical(Y);
+
+    input_shape := tnp_shape.Create([X.shape[1], X.shape[2]]);
+    //# define the LSTM model
+    var model : TSequential := TSequential.Create;
+    var filepath : string :='weights-improvement-{epoch:02d}-{loss:.4f}-bigger.hdf5';
+    model.Add( TLSTM.Create(256,'tanh',@input_shape,False,False));
+    model.Add( TDropout.Create(0.2));
+    model.Add( TDense.Create(y.shape[1],'softmax'));
+
+    model.Compile('adam','categorical_crossentropy');
+    model.Summary;
+
+    model.Save('model.h5');
+
+    checkpoint := TModelCheckpoint.Create(filepath,'loss',1,True,False,'min');
+
+    model.Fit(X,Y,@batch_size,epochs,1,[checkpoint]) ;
+
+    model.Save('model.h5');
+
+    TextGen_predict(model);
+end;
+
+procedure TfrmMain.TextGen_predict(model : TSequential);
+var
+  n,i,start,
+  n_vocab      : Integer;
+  raw_text     : TArray<AnsiChar>;
+  char_to_int  : TDictionary<AnsiChar,Integer>;
+  int_to_char  : TDictionary<Integer,AnsiChar>;
+  dataX        : TArray2D<Integer>;
+  dataY        : TArray<Integer>;
+  pattern      : TArray<Integer>;
+  s            : AnsiString;
+  x,prediction,
+  tmp          : TNDArray;
+  index        : Integer;
+begin
+    n_vocab := LoadTxt('Alice.txt', 100,raw_text, dataX,dataY);
+
+    char_to_int := TDictionary<AnsiChar,Integer>.Create;
+    int_to_char := TDictionary<Integer,AnsiChar>.Create;
+    try
+      n := 0;
+      for i := 0 to Length(raw_text)-1 do
+      begin
+          if not char_to_int.ContainsKey( raw_text[i] ) then
+          begin
+              char_to_int.Add(raw_text[i],n);
+              int_to_char.Add(n,raw_text[i]);
+              inc(n);
+          end;
+      end;
+      //# pick a random seed
+      start   := Random(Length(dataX)-1);
+      pattern := dataX[start];
+
+      s:= '';
+      for i := 0 to High(pattern) do
+        s := s + int_to_char[ pattern[i] ];
+
+      redtOutput.Lines.Add('Seed: ');
+      redtOutput.Lines.Add(s);
+      redtOutput.Repaint;
+
+      //# generate characters
+      for i := 0 to 1000 do
+      begin
+          x := TNumPy.npArray<Integer>(pattern) ;
+          x := TNumPy.reshape(x,[1,Length(pattern),1]) ;
+          x := TNDArray.opDiv(x, Double(n_vocab));
+          prediction := model.Predict(x,nil,0);
+          index := prediction.argmax(nil,tmp).asscalar<integer>;
+          pattern := pattern + [ index ];
+          Delete(pattern,0,1);
+
+          s := s + int_to_char[ index ];
+      end;
+      redtOutput.Lines.Add('Output: ');
+      redtOutput.Lines.Add(s);
+
+    finally
+      char_to_int.Free;
+      int_to_char.Free;
+    end;
+
+
+end;
+
+procedure TfrmMain.btn2Click(Sender: TObject);
+var
+  model      : TBaseModel;
+  fileWpath,
+  filemodel : string;
+begin
+    fileWpath :='weights-improvement-01-3.0559-bigger.hdf5';
+    filemodel :='model.h5';
+
+    model := TBaseModel.LoadModel(filemodel);
+    model.LoadWeight(fileWpath);
+
+    model.Compile('adam','categorical_crossentropy');
+    model.Summary;
+
+    TextGen_predict(TSequential( model));
+end;
+
+
 procedure TfrmMain.FormShow(Sender: TObject);
 var
    jpg: TJpegImage;
-   bmp: TBitmap;
+
 begin
     // inizialige python engine with gui input/output
     InitGlobal(PyIOCom);

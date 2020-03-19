@@ -14,16 +14,22 @@ object frmMain: TfrmMain
   OnShow = FormShow
   PixelsPerInch = 96
   TextHeight = 13
-  object splBottom: TSplitter
+  object spl1: TSplitter
+    Left = 241
+    Top = 43
+    Width = 5
+    Height = 258
+    ExplicitLeft = 497
+    ExplicitTop = 42
+  end
+  object spl2: TSplitter
     Left = 0
     Top = 301
     Width = 804
     Height = 5
     Cursor = crVSplit
     Align = alBottom
-    ExplicitLeft = -69
-    ExplicitTop = 498
-    ExplicitWidth = 904
+    ExplicitTop = 309
   end
   object pnlTop: TPanel
     Left = 0
@@ -41,26 +47,32 @@ object frmMain: TfrmMain
       TabOrder = 0
       OnClick = btn1Click
     end
+    object btn2: TBitBtn
+      Left = 120
+      Top = 12
+      Width = 75
+      Height = 25
+      Caption = 'text Predict'
+      TabOrder = 1
+      OnClick = btn2Click
+    end
   end
   object pnl1: TPanel
     Left = 0
     Top = 43
-    Width = 804
+    Width = 241
     Height = 258
-    Align = alClient
+    Align = alLeft
     Caption = 'pnl1'
     TabOrder = 1
     object img1: TImage
       Left = 1
       Top = 1
-      Width = 802
+      Width = 239
       Height = 256
       Align = alClient
       Stretch = True
-      ExplicitLeft = 384
-      ExplicitTop = 112
-      ExplicitWidth = 105
-      ExplicitHeight = 105
+      ExplicitWidth = 232
     end
   end
   object redtOutput: TRichEdit
@@ -76,11 +88,63 @@ object frmMain: TfrmMain
     Font.Name = 'MS Sans Serif'
     Font.Style = []
     ParentFont = False
-    ScrollBars = ssBoth
+    ScrollBars = ssVertical
     TabOrder = 2
     WordWrap = False
     Zoom = 100
     OnChange = redtOutputChange
+  end
+  object pnl2: TPanel
+    Left = 246
+    Top = 43
+    Width = 558
+    Height = 258
+    Align = alClient
+    Caption = 'pnl2'
+    TabOrder = 3
+    object cht1: TChart
+      Left = 1
+      Top = 1
+      Width = 556
+      Height = 256
+      Legend.LegendStyle = lsSeries
+      Legend.TextStyle = ltsPlain
+      Title.Text.Strings = (
+        'Training and Validation Accuracy')
+      BottomAxis.Title.Caption = 'Epoch'
+      LeftAxis.Title.Caption = 'Loss'
+      Align = alClient
+      TabOrder = 0
+      DefaultCanvas = 'TGDIPlusCanvas'
+      PrintMargins = (
+        15
+        19
+        15
+        19)
+      ColorPaletteIndex = 18
+      object srsTraining_Loss: TLineSeries
+        Legend.Text = 'Training loss'
+        LegendTitle = 'Training loss'
+        Brush.BackColor = clDefault
+        Pointer.InflateMargins = True
+        Pointer.Style = psRectangle
+        XValues.Name = 'X'
+        XValues.Order = loAscending
+        YValues.Name = 'Y'
+        YValues.Order = loNone
+      end
+      object srsValidation_loss: TLineSeries
+        Legend.Text = 'Validation accuracy'
+        LegendTitle = 'Validation accuracy'
+        Brush.BackColor = clDefault
+        Pointer.InflateMargins = True
+        Pointer.Style = psRectangle
+        XValues.Name = 'X'
+        XValues.Order = loAscending
+        YValues.Name = 'Y'
+        YValues.Order = loNone
+      end
+    end
   end
   object PyIOCom: TPythonGUIInputOutput
     UnicodeIO = True

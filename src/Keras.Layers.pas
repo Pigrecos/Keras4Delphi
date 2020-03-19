@@ -45,6 +45,11 @@ type
        constructor Create(units               : Integer;
                           activation          : string= '';
                           input_shape         : PTnp_Shape= nil) ;overload;
+
+       constructor Create(units               : Integer;
+                          activation          : string;
+                          kernel_regularizer  : string;
+                          input_shape         : PTnp_Shape) ;overload;
   end;
 
   TActivation = class(TBaseLayer)
@@ -165,6 +170,13 @@ type
                           padding             : string;
                           activation          : string;
                           input_shape         : PTnp_Shape); overload;
+
+       constructor Create(filters             : Integer;
+                          kernel_size         : Integer;
+                          padding             : string;
+                          activation          : string;
+                          input_shape         : PTnp_Shape;
+                          kernel_regularizer  : string); overload;
   end;
 
   TConv2D = class(TBaseLayer)
@@ -928,6 +940,21 @@ begin
     Init;
 end;
 
+constructor TDense.Create(units : Integer; activation : string; kernel_regularizer: string; input_shape: PTnp_Shape) ;
+begin
+    inherited Create;
+
+    Parameters.Add( TPair<String,TValue>.Create('units',units));
+    Parameters.Add( TPair<String,TValue>.Create('activation',activation));
+    Parameters.Add( TPair<String,TValue>.Create('kernel_regularizer',kernel_regularizer));
+
+    if input_shape <> nil then Parameters.Add( TPair<String,TValue>.Create('input_shape',TValue.FromShape(input_shape^)))
+    else                       Parameters.Add( TPair<String,TValue>.Create('input_shape', TPythonObject.None ));
+
+    PyInstance := GetKerasClassIstance('layers.Dense');
+    Init;
+end;
+
 { TActivation }
 
 constructor TActivation.Create(act: string; input_shape: PTnp_Shape);
@@ -1247,6 +1274,23 @@ begin
     Parameters.Add( TPair<String,TValue>.Create('kernel_size',kernel_size));
     Parameters.Add( TPair<String,TValue>.Create('padding',padding));
     Parameters.Add( TPair<String,TValue>.Create('activation',activation));
+
+    if input_shape <> nil then Parameters.Add( TPair<String,TValue>.Create('input_shape',TValue.FromShape(input_shape^)))
+    else                       Parameters.Add( TPair<String,TValue>.Create('input_shape', TPythonObject.None ));
+
+    PyInstance := GetKerasClassIstance('layers.Conv1D');
+    Init;
+end;
+
+constructor TConv1D.Create(filters, kernel_size: Integer; padding, activation: string; input_shape: PTnp_Shape;kernel_regularizer : string);
+begin
+    inherited Create;
+
+    Parameters.Add( TPair<String,TValue>.Create('filters',filters));
+    Parameters.Add( TPair<String,TValue>.Create('kernel_size',kernel_size));
+    Parameters.Add( TPair<String,TValue>.Create('padding',padding));
+    Parameters.Add( TPair<String,TValue>.Create('activation',activation));
+    Parameters.Add( TPair<String,TValue>.Create('kernel_regularizer',kernel_regularizer));
 
     if input_shape <> nil then Parameters.Add( TPair<String,TValue>.Create('input_shape',TValue.FromShape(input_shape^)))
     else                       Parameters.Add( TPair<String,TValue>.Create('input_shape', TPythonObject.None ));

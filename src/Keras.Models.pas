@@ -189,7 +189,10 @@ function TUtil.ToCategorical(y: TNDarray; num_classes : PInteger= nil; dtype: st
 begin
     Parameters.Clear;
     Parameters.Add( TPair<String,TValue>.Create('y',y) );
-    Parameters.Add( TPair<String,TValue>.Create('num_classes',num_classes^) );
+
+    if num_classes <> nil then Parameters.Add( TPair<String,TValue>.Create('num_classes',num_classes^))
+    else                       Parameters.Add( TPair<String,TValue>.Create('num_classes', TPythonObject.None ));
+
     Parameters.Add( TPair<String,TValue>.Create('dtype',dtype) );
 
     Result := TNDArray.Create( InvokeStaticMethod(caller,'to_categorical',Parameters) )
