@@ -45,7 +45,7 @@ type
        destructor  Destroy; override;
 
        function  InvokeMethod(                                   method: string; args: TList< TPair<String,TValue> >): TPythonObject;
-       class function  InvokeStaticMethod(caller: TPythonObject; method: string; args: TList< TPair<String,TValue> >): TPythonObject;
+       class function  InvokeStaticMethod(caller: TPythonObject; method: string; args: TList< TPair<String,TValue> >; posArg: Boolean = True): TPythonObject;
        procedure Init(posArg: Boolean = True);
 
        class function  GetKerasClassIstance(nameClass: AnsiString): TPythonObject;
@@ -875,12 +875,12 @@ var
    skip   : Boolean;
    item   : TPair<String,TValue>;
 begin
-
+  // se non accetta argomenti posizionali
   if posArg = False  then
   begin
       pyargs := ToTuple([]);
       skip := False;
-  end else
+  end else  // se invece accetta argomenti posizionali
   begin
       if Parameters.Count > 0 then pyargs := ToTuple([Parameters.First.Value])
       else                         pyargs := ToTuple([]);
@@ -909,7 +909,7 @@ begin
 
 end;
 
-class function TBase.InvokeStaticMethod(caller : TPythonObject; method: string; args: TList< TPair<String,TValue> >): TPythonObject;
+class function TBase.InvokeStaticMethod(caller : TPythonObject; method: string; args: TList< TPair<String,TValue> >; posArg: Boolean): TPythonObject;
 var
    pyargs : TPyTuple;
    kwargs : TPyDict;
@@ -917,12 +917,21 @@ var
    item   : TPair<String,TValue>;
 begin
 
-  if args.Count > 0 then pyargs := ToTuple([args.First.Value])
-  else                   pyargs := ToTuple([]);
+  // se non accetta argomenti posizionali
+  if posArg = False  then
+  begin
+      pyargs := ToTuple([]);
+      skip := False;
+  end else  // se invece accetta argomenti posizionali
+  begin
+      if args.Count > 0 then pyargs := ToTuple([args.First.Value])
+      else                   pyargs := ToTuple([]);
+      skip := True;
+  end;
 
   kwargs := TPyDict.Create;
 
-  skip := True;
+  skip := true;
   for item in  args do
   begin
       if skip then

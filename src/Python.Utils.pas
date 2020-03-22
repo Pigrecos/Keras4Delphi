@@ -312,7 +312,7 @@ begin
         attr := g_MyPyEngine.PyObject_GetAttrString(FHandle, PAnsiChar(AnsiString(name)));
         g_MyPyEngine.PyErr_Clear;
         if attr = nil then
-          raise EPythonError.Create('GetAttr: can''t get Attribute :'+ name);
+          raise EPythonError.Create('GetAttr: can''t get Attribute : '+ name);
 
         Result := TPythonObject.Create(attr);
         //g_MyPyEngine.Py_XDecRef(Result.Handle); // keep a borrowed reference.

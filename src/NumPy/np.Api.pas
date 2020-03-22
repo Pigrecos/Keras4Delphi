@@ -26,6 +26,8 @@ type
 
   TNumPyArray = class Helper for  TNumPy
     public
+      //np.sorting.gen.cs
+      function argmax(a: TNDarray ; axis: PInteger ; var _out : TNDarray): TNDarray;
       //np.staticstics.gen.cs
       function amin(a: TNDarray ; axis: TArray<Integer> ; var _out : TNDarray; keepdims : PBoolean; initial : TValue): TNDarray;
       function amax(a: TNDarray ; axis: TArray<Integer> ; var _out : TNDarray; keepdims : PBoolean; initial : TValue): TNDarray;
@@ -342,6 +344,24 @@ implementation
 (************************************************************************)
 
 { TNumPyArray }
+
+//np.sorting.gen.cs
+function TNumPyArray.argmax(a: TNDarray ; axis: PInteger ; var _out : TNDarray): TNDarray;
+var
+   pyargs : TPyTuple;
+   kwargs : TPyDict;
+   py     : TPythonObject;
+begin
+    pyargs := TNumPy.ToTuple([a]);
+
+    kwargs := TPyDict.Create;
+    if (axis <> nil)         then kwargs['axis']     := ToPython(axis^);
+    if (_out <> nil)         then kwargs['out']      := ToPython(_out);
+    py := FhModuleNumPy.InvokeMethod('argmax', pyargs, kwargs);
+
+    Result := TNumPy.ToCsharp<TNDarray>(py);
+
+end;
 
 //np.staticstics.gen.cs
 function TNumPyArray.amin(a: TNDarray ; axis: TArray<Integer> ; var _out : TNDarray; keepdims : PBoolean; initial : TValue): TNDarray;

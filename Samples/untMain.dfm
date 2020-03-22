@@ -47,15 +47,6 @@ object frmMain: TfrmMain
       TabOrder = 0
       OnClick = btn1Click
     end
-    object btn2: TBitBtn
-      Left = 120
-      Top = 12
-      Width = 75
-      Height = 25
-      Caption = 'text Predict'
-      TabOrder = 1
-      OnClick = btn2Click
-    end
   end
   object pnl1: TPanel
     Left = 0

@@ -145,7 +145,8 @@ type
        function  Normalize(y: TNDarray; axis: Integer = -1; order: Integer = 2): TNDarray;
        procedure PlotModel(model: TBaseModel; to_file: string = 'model.png'; show_shapes: Boolean = false; show_layer_names: Boolean = true; rankdir: string = 'TB'; expand_nested: Boolean = false; dpi: Integer = 96) ;
        procedure ConfigTensorFlowBackend(intra_op_parallelism_threads: Integer; inter_op_parallelism_threads: Integer; allow_soft_placement: Boolean; cpu_device_count: Integer;gpu_device_count: Integer );
-  end;
+       procedure device( device_name: string );
+ end;
 
 implementation
     uses Winapi.Windows, System.IOUtils, System.Rtti,np.Utils,np.Base, np.Api;
@@ -225,11 +226,12 @@ end;
 
 procedure TUtil.ConfigTensorFlowBackend(intra_op_parallelism_threads: Integer; inter_op_parallelism_threads: Integer; allow_soft_placement: Boolean; cpu_device_count: Integer;gpu_device_count: Integer );
 var
- tf,kb,config,session : TPythonObject;
+ tf,conf,kb,config,session : TPythonObject;
  deviceCount          : TPyDict;
 begin
-    tf := TPythonObject.Create(ImportModule('tensorflow'));
-    kb := TPythonObject.Create(ImportModule('keras.backend'));
+    tf   := TPythonObject.Create(ImportModule('tensorflow'));
+    conf := TPythonObject.Create(ImportModule('tensorflow.compat.v1'));
+    kb   := TPythonObject.Create(ImportModule('tensorflow.compat.v1.keras.backend'));
 
     deviceCount := TPyDict.Create;
     deviceCount['CPU'] := TPyInt.Create( cpu_device_count );
@@ -239,16 +241,29 @@ begin
     Parameters.Add( TPair<String,TValue>.Create('intra_op_parallelism_threads',intra_op_parallelism_threads) );
     Parameters.Add( TPair<String,TValue>.Create('inter_op_parallelism_threads',inter_op_parallelism_threads) );
     Parameters.Add( TPair<String,TValue>.Create('allow_soft_placement',allow_soft_placement) );
-    Parameters.Add( TPair<String,TValue>.Create('deviceCount',deviceCount) );
-    config := InvokeStaticMethod(tf,'ConfigProto',Parameters) ;
+    Parameters.Add( TPair<String,TValue>.Create('device_count',deviceCount) );
+    config := InvokeStaticMethod(conf,'ConfigProto',Parameters,False) ;
 
     Parameters.Clear;
     Parameters.Add( TPair<String,TValue>.Create('config',config) );
-    session := InvokeStaticMethod(tf,'Session',Parameters);
+    session := InvokeStaticMethod(conf,'Session',Parameters,False);
 
     Parameters.Clear;
     Parameters.Add( TPair<String,TValue>.Create('session',session) );
     InvokeStaticMethod(kb,'set_session',Parameters)
+end;
+
+procedure TUtil.device( device_name: string );
+var
+ tf : TPythonObject;
+
+begin
+    tf   := TPythonObject.Create(ImportModule('tensorflow'));
+
+    Parameters.Clear;
+    Parameters.Add( TPair<String,TValue>.Create('device_name',device_name) );
+
+    InvokeStaticMethod(tf,'device',Parameters)
 end;
 
 { TBaseModel }

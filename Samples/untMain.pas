@@ -33,11 +33,9 @@ type
     cht1: TChart;
     srsTraining_Loss: TLineSeries;
     srsValidation_loss: TLineSeries;
-    btn2: TBitBtn;
     procedure FormShow(Sender: TObject);
     procedure btn1Click(Sender: TObject);
     procedure redtOutputChange(Sender: TObject);
-    procedure btn2Click(Sender: TObject);
   private
     procedure TestVarios;
     procedure esempio_XOR;
@@ -50,8 +48,8 @@ type
     procedure SentimentClassificationLSTM;
     procedure Predict(text: string);
     procedure TextGen;
-    function LoadTxt(fileName: string; lenSeq:Integer; var rawTxt: TArray<AnsiChar>; var DataX: TArray2D<Integer>; var DataY: TArray<Integer>):Integer;
-    procedure TextGen_predict(model : TSequential);
+    function LoadTxt(fileName: string; lenSeq:Integer; step: Integer; var rawTxt: TArray<AnsiChar>; var DataX: TArray2D<Integer>; var DataY: TArray<Integer>):Integer;
+    procedure TextGen_predict(model : TSequential; seqLen, Step: Integer);
     { Private declarations }
   public
     { Public declarations }
@@ -156,19 +154,32 @@ end;
 procedure TfrmMain.btn1Click(Sender: TObject);
 begin
     //============== Esempi ======================//
-    TextGen ;
-     NumPyTest;
-    // keras test
+
+    // ====NumPy basic test
+    NumPyTest;
+
+    // ====keras test
     Test1;
+    //
     esempio_XOR;
+    //
     MergeExample ;
+    //
     ImplementCallback;
+    //
     MNIST_CNN ;
+    //
     SentimentClassification;
     Predict('I hate you');
     Predict('I care about you');
-
+    //
     SentimentClassificationLSTM;
+    //
+    TextGen ;
+    var filemodel : string      :='TextGen.h5';
+    var model     : TSequential := TSequential(TSequential.LoadModel(filemodel));
+    TextGen_predict(model,40,1);
+    //
 end;
 
 procedure TfrmMain.NumPyTest;
@@ -617,7 +628,7 @@ begin
 
 end;
 
-function TfrmMain.LoadTxt(fileName: string; lenSeq:Integer; var rawTxt: TArray<AnsiChar>; var DataX: TArray2D<Integer>; var DataY: TArray<Integer>):Integer;
+function TfrmMain.LoadTxt(fileName: string; lenSeq:Integer; step: Integer; var rawTxt: TArray<AnsiChar>; var DataX: TArray2D<Integer>; var DataY: TArray<Integer>):Integer;
 var
   i,n,n_chars,
   seq_length    : Integer;
@@ -666,8 +677,8 @@ begin
         seq_length := lenSeq;
         SetLength(seq_in,seq_length) ;
         SetLength(seq_out,1);
-        for i := 0 to (n_chars - seq_length)-1 do
-        begin
+        i := 0;
+        repeat
            ZeroMemory(seq_in,Length(seq_in));
            ZeroMemory(seq_out,Length(seq_out));
            TArray.Copy<AnsiChar>(rawTxt,seq_in,i,0, seq_length);
@@ -677,8 +688,10 @@ begin
            for c in seq_in do
              dataX[ High(dataX) ] := dataX[ High(dataX) ] + [ char_to_int[c] ] ;
 
-           dataY := dataY + [ char_to_int[seq_out[0]] ]
-        end;
+           dataY := dataY + [ char_to_int[seq_out[0]] ]  ;
+
+           inc(i,Step);
+        until i >= ((n_chars - seq_length)-1);
 
       finally
         char_to_int.Free;
@@ -693,24 +706,29 @@ end;
 // text file - http://www.gutenberg.org/ebooks/28371
 procedure TfrmMain.TextGen;
 var
-  n_chars,
+  n_chars,i,t,
   n_vocab,
   seq_length,
-  n_patterns   : Integer;
+  n_patterns,
+  step         : Integer;
   raw_text     : TArray<AnsiChar>;
   dataX        : TArray2D<Integer>;
-  dataY        : TArray<Integer>;
+  dataY,
+  sentence     : TArray<Integer>;
+  item         : TArray<Integer>;
   X,Y          : TNDArray;
   input_shape  : Tnp_Shape;
-  checkpoint   : TModelCheckpoint;
+  checkpoint,
+  early_stop   : keras.TCallback ;
   batch_size   : Integer;
   epochs       : Integer;
 begin
-    seq_length := 100;
+    seq_length := 40;
     batch_size := 64;
     epochs     := 20;
+    step       := 1;
 
-    n_vocab := LoadTxt('Alice.txt', seq_length, raw_text, dataX,dataY);
+    n_vocab := LoadTxt('Alice.txt', seq_length, step,raw_text, dataX,dataY);
     n_chars    := Length(raw_text);
     n_patterns := Length(dataX);
 
@@ -718,55 +736,63 @@ begin
     redtOutput.Lines.Add('Total Vocab: '        + IntToStr(n_vocab));
     redtOutput.Lines.Add('Total Patterns: '     + IntToStr(n_patterns));
 
-    X := TNumPy.npArray<Integer>(dataX);
     //# reshape X to be [samples, time steps, features]
-    X := TNumPy.reshape(X,[n_patterns,seq_length,1]);
-    //# normalize
-    X := TNDArray.opDiv(X, Double(n_vocab));
+    X := TNumPy.zeros(Tnp_Shape.Create([n_patterns,seq_length,n_vocab]), vNumpy.int32_ ) ;
+    Y := TNumPy.zeros(Tnp_Shape.Create([n_patterns,n_vocab]), vNumpy.int32_) ;
 
-    Y := TNumPy.npArray<Integer>(dataY);
-    //# one hot encode the output variable
-    var Util : TUtil := TUtil.Create;
-    Y := Util.ToCategorical(Y);
+    //# one hot encode the input/output variable
+    for i := 0 to n_patterns -1 do
+    begin
+        sentence := dataX[i];
+        for t := 0 to High(sentence) do
+        begin
+            item := [i,t, sentence[t] ];
+            X[ item ] := TNumPy.asarray(1);
+        end;
+        item  := [i, dataY[i]];
+        Y[ item ] := TNumPy.asarray(1);
+    end;
 
     input_shape := tnp_shape.Create([X.shape[1], X.shape[2]]);
     //# define the LSTM model
     var model : TSequential := TSequential.Create;
-    var filepath : string :='weights-improvement-{epoch:02d}-{loss:.4f}-bigger.hdf5';
-    model.Add( TLSTM.Create(256,'tanh',@input_shape,False,False));
+    var filepath : string :='weights-improvement-{epoch:02d}-{loss:.4f}.hdf5';
+    model.Add( TBidirectional.Create( TLSTM.Create(256),@input_shape ));
     model.Add( TDropout.Create(0.2));
-    model.Add( TDense.Create(y.shape[1],'softmax'));
+    model.Add( TDense.Create(y.shape[1]));
+    model.Add( TActivation.Create('softmax') );
 
-    model.Compile('adam','categorical_crossentropy');
+    model.Compile('adam' ,'categorical_crossentropy', [ 'accuracy' ]);
     model.Summary;
 
-    model.Save('model.h5');
-
     checkpoint := TModelCheckpoint.Create(filepath,'loss',1,True,False,'min');
+    early_stop := TEarlyStopping.Create('val_acc',0,20);
 
-    model.Fit(X,Y,@batch_size,epochs,1,[checkpoint]) ;
+    model.Fit(X,Y,@batch_size,epochs,1,[checkpoint,early_stop]) ;
 
-    model.Save('model.h5');
+    model.Save('TextGen.h5');
 
-    TextGen_predict(model);
 end;
 
-procedure TfrmMain.TextGen_predict(model : TSequential);
+procedure TfrmMain.TextGen_predict(model : TSequential; seqLen, Step: Integer);
 var
   n,i,start,
-  n_vocab      : Integer;
+  n_vocab,
+  maxlen,t     : Integer;
   raw_text     : TArray<AnsiChar>;
   char_to_int  : TDictionary<AnsiChar,Integer>;
   int_to_char  : TDictionary<Integer,AnsiChar>;
   dataX        : TArray2D<Integer>;
   dataY        : TArray<Integer>;
-  pattern      : TArray<Integer>;
+  pattern,item : TArray<Integer>;
   s            : AnsiString;
   x,prediction,
   tmp          : TNDArray;
   index        : Integer;
 begin
-    n_vocab := LoadTxt('Alice.txt', 100,raw_text, dataX,dataY);
+    tmp := nil;
+    n_vocab := LoadTxt('Alice.txt', seqLen,Step,raw_text, dataX,dataY);
+    maxlen  := Length (dataX[0]);
 
     char_to_int := TDictionary<AnsiChar,Integer>.Create;
     int_to_char := TDictionary<Integer,AnsiChar>.Create;
@@ -796,11 +822,16 @@ begin
       //# generate characters
       for i := 0 to 1000 do
       begin
-          x := TNumPy.npArray<Integer>(pattern) ;
-          x := TNumPy.reshape(x,[1,Length(pattern),1]) ;
-          x := TNDArray.opDiv(x, Double(n_vocab));
-          prediction := model.Predict(x,nil,0);
-          index := prediction.argmax(nil,tmp).asscalar<integer>;
+          X := TNumPy.zeros(Tnp_Shape.Create([1,maxlen,n_vocab]), vNumpy.bool_ ) ;
+          //# one hot encode the input/output variable
+          for t := 0 to High(pattern) do
+          begin
+              item := [0,t, pattern[t]];
+              X[ item ] := TNumPy.asarray(1);
+          end;
+
+          prediction := model.Predict(X,nil,0);
+          index := vNumpy.argmax(prediction,nil,tmp).asscalar<integer>;
           pattern := pattern + [ index ];
           Delete(pattern,0,1);
 
@@ -808,7 +839,7 @@ begin
       end;
       redtOutput.Lines.Add('Output: ');
       redtOutput.Lines.Add(s);
-
+      redtOutput.Refresh;
     finally
       char_to_int.Free;
       int_to_char.Free;
@@ -816,25 +847,6 @@ begin
 
 
 end;
-
-procedure TfrmMain.btn2Click(Sender: TObject);
-var
-  model      : TBaseModel;
-  fileWpath,
-  filemodel : string;
-begin
-    fileWpath :='weights-improvement-01-3.0559-bigger.hdf5';
-    filemodel :='model.h5';
-
-    model := TBaseModel.LoadModel(filemodel);
-    model.LoadWeight(fileWpath);
-
-    model.Compile('adam','categorical_crossentropy');
-    model.Summary;
-
-    TextGen_predict(TSequential( model));
-end;
-
 
 procedure TfrmMain.FormShow(Sender: TObject);
 var

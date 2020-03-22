@@ -43,7 +43,7 @@ type
                           input_shape         : PTnp_Shape= nil) ; overload;
 
        constructor Create(units               : Integer;
-                          activation          : string= '';
+                          activation          : string;
                           input_shape         : PTnp_Shape= nil) ;overload;
 
        constructor Create(units               : Integer;
@@ -569,7 +569,8 @@ type
 
   TBidirectional = class(TBaseLayer)
      public
-       constructor Create(layer: TBaseLayer;merge_mode: string= 'concat'; weights: TNDArray = nil);
+       constructor Create(layer: TBaseLayer;merge_mode: string= 'concat'; weights: TNDArray = nil; input_shape: PTnp_Shape= nil); overload;
+       constructor Create(layer: TBaseLayer; input_shape: PTnp_Shape= nil); overload;
   end;
 
   //Recurrent
@@ -634,7 +635,7 @@ type
      public
        constructor Create(units                : Integer;
                           activation           : string = 'tanh';
-                          recurrent_activation : string = 'hard_sigmoid';
+                          recurrent_activation : string = 'sigmoid';
                           use_bias             : Boolean= true;
                           kernel_initializer   : string = 'glorot_uniform';
                           recurrent_initializer: string = 'orthogonal';
@@ -684,7 +685,7 @@ type
      public
        constructor Create(units                : Integer;
                           activation           : string = 'tanh';
-                          recurrent_activation : string = 'hard_sigmoid';
+                          recurrent_activation : string = 'sigmoid';
                           use_bias             : Boolean= true;
                           kernel_initializer   : string = 'glorot_uniform';
                           recurrent_initializer: string = 'orthogonal';
@@ -705,7 +706,7 @@ type
      public
        constructor Create(units                : Integer;
                           activation           : string = 'tanh';
-                          recurrent_activation : string = 'hard_sigmoid';
+                          recurrent_activation : string = 'sigmoid';
                           use_bias             : Boolean= true;
                           kernel_initializer   : string = 'glorot_uniform';
                           recurrent_initializer: string = 'orthogonal';
@@ -2266,13 +2267,29 @@ end;
 
 { TBidirectional }
 
-constructor TBidirectional.Create(layer: TBaseLayer; merge_mode: string; weights: TNDArray);
+constructor TBidirectional.Create(layer: TBaseLayer; merge_mode: string; weights: TNDArray; input_shape: PTnp_Shape);
 begin
     inherited Create;
 
     Parameters.Add( TPair<String,TValue>.Create('layer',layer.PyInstance));
     Parameters.Add( TPair<String,TValue>.Create('merge_mode',merge_mode));
     Parameters.Add( TPair<String,TValue>.Create('weights',weights));
+
+    if input_shape <> nil then Parameters.Add( TPair<String,TValue>.Create('input_shape',TValue.FromShape(input_shape^)))
+    else                       Parameters.Add( TPair<String,TValue>.Create('input_shape', TPythonObject.None ));
+
+    PyInstance := GetKerasClassIstance('layers.Bidirectional');
+    Init;
+end;
+
+constructor TBidirectional.Create(layer: TBaseLayer; input_shape: PTnp_Shape);
+begin
+    inherited Create;
+
+    Parameters.Add( TPair<String,TValue>.Create('layer',layer.PyInstance));
+
+    if input_shape <> nil then Parameters.Add( TPair<String,TValue>.Create('input_shape',TValue.FromShape(input_shape^)))
+    else                       Parameters.Add( TPair<String,TValue>.Create('input_shape', TPythonObject.None ));
 
     PyInstance := GetKerasClassIstance('layers.Bidirectional');
     Init;
@@ -2568,8 +2585,12 @@ begin
     Parameters.Add( TPair<String,TValue>.Create('return_state',return_state));
     Parameters.Add( TPair<String,TValue>.Create('stateful',stateful));
 
+    // not work for tf ver 2
     PyInstance := GetKerasClassIstance('layers.CuDNNLSTM');
+    PyInstance := GetTFClassIstance('compat.v1.keras.layers.CuDNNLSTM');
     Init;
+
+
 end;
 
 { TLSTMCell }
