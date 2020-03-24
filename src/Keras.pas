@@ -463,6 +463,16 @@ type
        constructor Create(schedule:PyCFunction; verbose: Integer= 0);
   end;
 
+  TLambdaCallback = class(TCallback)
+     public
+       constructor Create(on_epoch_begin:PyCFunction = nil;
+                          on_epoch_end  :PyCFunction = nil;
+                          on_batch_begin:PyCFunction = nil;
+                          on_batch_end  :PyCFunction = nil;
+                          on_train_begin:PyCFunction = nil;
+                          on_train_end  :PyCFunction = nil);
+  end;
+
   TTensorBoard = class(TCallback)
      public
        constructor Create(log_dir               : string  = './logs';
@@ -2233,6 +2243,59 @@ begin
     init();
 end;
 
+{ TLambdaCallback }
+
+constructor TLambdaCallback.Create(on_epoch_begin, on_epoch_end, on_batch_begin, on_batch_end, on_train_begin, on_train_end: PyCFunction);
+begin
+    inherited Create;
+
+    var m : TPythonModule := TPythonModule.Create(nil);
+    m.ModuleName := 'kcallbacks';
+    m.Engine     := g_MyPyEngine;
+    m.Initialize;
+
+    var mr : PPyMethodDef;
+    if Assigned(on_epoch_begin) then mr  := m.AddMethod(pansichar('cb_on_epoch_begin'),on_epoch_begin,PAnsiChar('on_epoch_begin'));
+    if Assigned(on_epoch_end)   then mr  := m.AddMethod(pansichar('cb_on_epoch_end'),  on_epoch_end,  PAnsiChar('on_epoch_end'));
+    //
+    if Assigned(on_batch_begin) then mr  := m.AddMethod(pansichar('cb_on_batch_begin'),on_batch_begin,PAnsiChar('on_batch_begin'));
+    if Assigned(on_batch_end)   then mr  := m.AddMethod(pansichar('cb_on_batch_end'),  on_batch_end,  PAnsiChar('on_batch_end'));
+    //
+    if Assigned(on_train_begin) then mr  := m.AddMethod(pansichar('cb_on_train_begin'),on_train_begin,PAnsiChar('on_train_begin'));
+    if Assigned(on_train_end)   then mr  := m.AddMethod(pansichar('cb_on_train_end'),  on_train_end,  PAnsiChar('on_train_end'));
+
+    CreatePyFunc(m,mr);
+
+    var cb_on_epoch_begin : TPythonObject := nil;
+    var cb_on_epoch_end   : TPythonObject := nil;
+    var cb_on_batch_begin : TPythonObject := nil;
+    var cb_on_batch_end   : TPythonObject := nil;
+    var cb_on_train_begin : TPythonObject := nil;
+    var cb_on_train_end   : TPythonObject := nil;
+
+    if Assigned(on_epoch_begin) then  cb_on_epoch_begin := TPythonObject.create(m.Module).GetAttr('cb_on_epoch_begin') ;
+    if Assigned(on_epoch_end)   then  cb_on_epoch_end   := TPythonObject.create(m.Module).GetAttr('cb_on_epoch_end') ;
+    //
+    if Assigned(on_batch_begin) then  cb_on_batch_begin   := TPythonObject.create(m.Module).GetAttr('cb_on_batch_begin') ;
+    if Assigned(on_batch_end)   then  cb_on_batch_end  := TPythonObject.create(m.Module).GetAttr('cb_on_batch_end') ;
+    //
+    if Assigned(on_train_begin) then  cb_on_train_begin := TPythonObject.create(m.Module).GetAttr('cb_on_train_begin') ;
+    if Assigned(on_train_end)   then  cb_on_train_end  := TPythonObject.create(m.Module).GetAttr('cb_on_train_end') ;
+
+    //=============
+    if Assigned(on_epoch_begin) then Parameters.Add( TPair<String,TValue>.Create('on_epoch_begin', cb_on_epoch_begin ));
+    if Assigned(on_epoch_end)   then Parameters.Add( TPair<String,TValue>.Create('on_epoch_end',   cb_on_epoch_end ));
+    //
+    if Assigned(on_batch_begin) then Parameters.Add( TPair<String,TValue>.Create('on_batch_begin', cb_on_batch_begin ));
+    if Assigned(on_batch_end)   then Parameters.Add( TPair<String,TValue>.Create('on_batch_end',   cb_on_batch_end ));
+    //
+    if Assigned(on_train_begin) then Parameters.Add( TPair<String,TValue>.Create('on_on_train_begin', cb_on_train_begin ));
+    if Assigned(on_train_end)   then Parameters.Add( TPair<String,TValue>.Create('on_train_end',      cb_on_train_end ));
+
+    PyInstance := GetKerasClassIstance('callbacks.LambdaCallback');
+    init();
+end;
+
 { TTensorBoard }
 
 constructor TTensorBoard.Create(log_dir: string; histogram_freq, batch_size: Integer; write_graph, write_grads,
@@ -2424,5 +2487,6 @@ begin
 
     Result := TNDarray.Create( InvokeStaticMethod(caller,'to_dense',Parameters) )
 end;
+
 
 end.

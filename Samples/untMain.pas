@@ -156,7 +156,7 @@ begin
     //============== Esempi ======================//
 
     // ====NumPy basic test
-    NumPyTest;
+    (*NumPyTest;
 
     // ====keras test
     Test1;
@@ -173,12 +173,12 @@ begin
     Predict('I hate you');
     Predict('I care about you');
     //
-    SentimentClassificationLSTM;
+    SentimentClassificationLSTM;  *)
     //
     TextGen ;
     var filemodel : string      :='TextGen.h5';
     var model     : TSequential := TSequential(TSequential.LoadModel(filemodel));
-    TextGen_predict(model,40,1);
+    TextGen_predict(model,40,3);
     //
 end;
 
@@ -628,6 +628,26 @@ begin
 
 end;
 
+procedure OnEpochEnd(epochidx: Integer;log:string);
+begin
+    frmMain.redtOutput.Lines.Add('test callback :' + IntToStr(epochidx));
+end;
+
+function pyOnEpochEnd(self, args : PPyObject): PPyObject;cdecl;  far;
+var
+  epochidx,i: Integer ;
+  dLogs     : PPyObject;
+
+begin
+    Result := nil;
+    if g_MyPyEngine.PyArg_ParseTuple( args, 'iO:OnEpochEnd', @epochidx,@dLogs  ) <> 0 then
+    begin
+        OnEpochEnd(epochidx,'') ;
+
+        Result :=   g_MyPyEngine.VariantAsPyObject(epochidx) ;
+    end;
+end;
+
 function TfrmMain.LoadTxt(fileName: string; lenSeq:Integer; step: Integer; var rawTxt: TArray<AnsiChar>; var DataX: TArray2D<Integer>; var DataY: TArray<Integer>):Integer;
 var
   i,n,n_chars,
@@ -644,7 +664,7 @@ begin
 
     ss := TStringStream.Create;
     try
-      ss.LoadFromFile('Alice.txt');
+      ss.LoadFromFile(fileName);
       SetLength(rawTxt,ss.Size);
 
       ss.Position := 0;
@@ -719,14 +739,15 @@ var
   X,Y          : TNDArray;
   input_shape  : Tnp_Shape;
   checkpoint,
-  early_stop   : keras.TCallback ;
+  early_stop,
+  logEpoch     : keras.TCallback ;
   batch_size   : Integer;
   epochs       : Integer;
 begin
     seq_length := 40;
     batch_size := 64;
     epochs     := 20;
-    step       := 1;
+    step       := 3;
 
     n_vocab := LoadTxt('Alice.txt', seq_length, step,raw_text, dataX,dataY);
     n_chars    := Length(raw_text);
@@ -757,7 +778,7 @@ begin
     //# define the LSTM model
     var model : TSequential := TSequential.Create;
     var filepath : string :='weights-improvement-{epoch:02d}-{loss:.4f}.hdf5';
-    model.Add( TBidirectional.Create( TLSTM.Create(256),@input_shape ));
+    model.Add( TBidirectional.Create( TGRU.Create(256),@input_shape ));
     model.Add( TDropout.Create(0.2));
     model.Add( TDense.Create(y.shape[1]));
     model.Add( TActivation.Create('softmax') );
@@ -767,8 +788,9 @@ begin
 
     checkpoint := TModelCheckpoint.Create(filepath,'loss',1,True,False,'min');
     early_stop := TEarlyStopping.Create('val_acc',0,20);
+    logEpoch   := TLambdaCallback.Create(pyOnEpochEnd);
 
-    model.Fit(X,Y,@batch_size,epochs,1,[checkpoint,early_stop]) ;
+    model.Fit(X,Y,@batch_size,epochs,1,[checkpoint,early_stop,logEpoch]) ;
 
     model.Save('TextGen.h5');
 
@@ -844,8 +866,6 @@ begin
       char_to_int.Free;
       int_to_char.Free;
     end;
-
-
 end;
 
 procedure TfrmMain.FormShow(Sender: TObject);
